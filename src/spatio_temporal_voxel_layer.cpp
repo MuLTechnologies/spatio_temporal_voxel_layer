@@ -124,7 +124,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   declareParameter("mapping_mode", rclcpp::ParameterValue(false));
   node->get_parameter(name_ + ".mapping_mode", _mapping_mode);
   // enable autosaving of the map
-  declareParameter("sutosaving_enabled", rclcpp::ParameterValue(false));
+  declareParameter("autosaving_enabled", rclcpp::ParameterValue(false));
   node->get_parameter(name_ + ".autosaving_enabled", _autosaving_enabled);
   // path to the stvl map path
   declareParameter("stvl_map_file", rclcpp::ParameterValue(std::string("")));
@@ -849,7 +849,7 @@ void SpatioTemporalVoxelLayer::updateBounds(
 
     auto response =
       std::make_shared<std_srvs::srv::Trigger::Response>();
-    SaveStvlMapCallback(nullptr, nullptr, response)
+    SaveStvlMapCallback(nullptr, nullptr, response);
   }
 
   // mark observations
