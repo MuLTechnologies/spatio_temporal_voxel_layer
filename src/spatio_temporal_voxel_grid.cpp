@@ -39,6 +39,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include "spatio_temporal_voxel_layer/spatio_temporal_voxel_grid.hpp"
 
@@ -49,14 +50,22 @@ namespace volume_grid
 SpatioTemporalVoxelGrid::SpatioTemporalVoxelGrid(
   rclcpp::Clock::SharedPtr clock,
   const float & voxel_size, const double & background_value,
-  const int & decay_model, const double & voxel_decay, const bool & pub_voxels)
+  const int & decay_model, const double & voxel_decay, const bool & pub_voxels, 
+  const bool &load_map, const std::string &map_file)
 : _clock(clock), _decay_model(decay_model), _background_value(background_value),
   _voxel_size(voxel_size), _voxel_decay(voxel_decay), _pub_voxels(pub_voxels),
   _grid_points(std::make_unique<std::vector<geometry_msgs::msg::Point32>>()),
   _cost_map(new std::unordered_map<occupany_cell, uint>)
 /*****************************************************************************/
 {
-  this->InitializeGrid();
+  if (load_map)
+  {
+    InitializeGridFromFile(map_file);
+  }
+  else  
+  {
+    InitializeGrid();
+  }
 }
 
 /*****************************************************************************/
@@ -90,6 +99,46 @@ void SpatioTemporalVoxelGrid::InitializeGrid(void)
   _grid->setName("SpatioTemporalVoxelLayer");
   _grid->insertMeta("Voxel Size", openvdb::FloatMetadata(_voxel_size));
   _grid->setGridClass(openvdb::GRID_LEVEL_SET);
+}
+
+/*****************************************************************************/
+void SpatioTemporalVoxelGrid::InitializeGridFromFile(std::string filename)
+/*****************************************************************************/
+{
+  openvdb::initialize();
+  openvdb::io::File file(filename);
+
+  try
+  {
+    file.open();
+  }
+  catch (const openvdb::IoError &e)
+  {
+    throw std::runtime_error("Exception during loading file: " + std::string(e.what()));
+  }
+  catch (const std::exception &e)
+  {
+    throw std::runtime_error("Exception during loading file: " + std::string(e.what()));
+  }
+  openvdb::GridBase::Ptr base_grid;
+
+  bool valid_grid = false;
+
+  for (openvdb::io::File::NameIterator name_iter = file.beginName();
+        name_iter != file.endName(); ++name_iter)
+  {
+    if (name_iter.gridName() == "SpatioTemporalVoxelLayer")
+    {
+      base_grid = file.readGrid(name_iter.gridName());
+      _grid = openvdb::gridPtrCast<openvdb::DoubleGrid>(base_grid);
+      valid_grid = true;
+    }
+  }
+
+  if (!valid_grid)
+  {
+    throw std::runtime_error("No valid grid inside of provided file.");
+  }
 }
 
 /*****************************************************************************/
@@ -479,7 +528,7 @@ bool SpatioTemporalVoxelGrid::SaveGrid(
 /*****************************************************************************/
 {
   try {
-    openvdb::io::File file(file_name + ".vdb");
+    openvdb::io::File file(file_name);
     openvdb::GridPtrVec grids = {_grid};
     file.write(grids);
     file.close();

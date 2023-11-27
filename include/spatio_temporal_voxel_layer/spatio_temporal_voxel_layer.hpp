@@ -68,6 +68,7 @@
 #include "geometry_msgs/msg/point.hpp"
 #include "spatio_temporal_voxel_layer/srv/save_grid.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "std_srvs/srv/trigger.hpp"
 // projector
 #include "laser_geometry/laser_geometry.hpp"
 // tf
@@ -134,6 +135,16 @@ public:
     std::shared_ptr<spatio_temporal_voxel_layer::srv::SaveGrid::Request> req,
     std::shared_ptr<spatio_temporal_voxel_layer::srv::SaveGrid::Response> resp);
 
+  // Map saving service callbacks
+  void SaveStvlMapCallback(
+    const std::shared_ptr<rmw_request_id_t>/*header*/, 
+    std::shared_ptr<std_srvs::srv::Trigger::Request>, 
+    std::shared_ptr<std_srvs::srv::Trigger::Response> resp);
+  void EraseStvlMapCallback(
+    const std::shared_ptr<rmw_request_id_t>/*header*/, 
+    std::shared_ptr<std_srvs::srv::Trigger::Request>, 
+    std::shared_ptr<std_srvs::srv::Trigger::Response> resp);
+
 private:
   // Sensor callbacks
   void LaserScanCallback(
@@ -159,6 +170,8 @@ private:
       & subcriber
     );
 
+  void InitializeVoxelGrid(const std::shared_ptr<rclcpp::Clock> & clock);
+
   /**
    * @brief Callback executed when a paramter change is detected
    * @param parameters list of changed parameters
@@ -175,11 +188,14 @@ private:
   std::vector<std::shared_ptr<buffer::MeasurementBuffer>> _clearing_buffers;
   std::vector<rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr> _buffer_enabler_servers;
 
-  bool _publish_voxels, _mapping_mode, was_reset_;
+  bool _publish_voxels, _mapping_mode, was_reset_, _autosaving_enabled;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _voxel_pub;
   rclcpp::Service<spatio_temporal_voxel_layer::srv::SaveGrid>::SharedPtr _grid_saver;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _save_stvl_map_srv;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _erase_stvl_map_srv;
   std::unique_ptr<rclcpp::Duration> _map_save_duration;
   rclcpp::Time _last_map_save_time;
+  std::string _stvl_map_file;
   std::string _global_frame;
   double _voxel_size, _voxel_decay;
   int _combination_method, _mark_threshold;

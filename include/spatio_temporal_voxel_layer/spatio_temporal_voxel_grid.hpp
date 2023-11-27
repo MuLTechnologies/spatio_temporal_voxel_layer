@@ -62,6 +62,8 @@
 #include "visualization_msgs/msg/marker.hpp"
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/point32.hpp"
+// srv
+#include "std_srvs/srv/trigger.hpp"
 // OpenVDB
 #include "openvdb/openvdb.h"
 #include "openvdb/tools/GridTransformer.h"
@@ -130,7 +132,8 @@ public:
     rclcpp::Clock::SharedPtr clock,
     const float & voxel_size, const double & background_value,
     const int & decay_model, const double & voxel_decay,
-    const bool & pub_voxels);
+    const bool & pub_voxels, const bool& load_map, 
+    const std::string& map_file = "");
   ~SpatioTemporalVoxelGrid(void);
 
   // Core making and clearing functions
@@ -154,6 +157,7 @@ public:
 protected:
   // Initialize grid metadata and library
   void InitializeGrid(void);
+  void InitializeGridFromFile(std::string filename);
 
   // grid accessor methods
   bool MarkGridPoint(const openvdb::Coord & pt, const double & value) const;
