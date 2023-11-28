@@ -188,7 +188,7 @@ private:
   std::vector<std::shared_ptr<buffer::MeasurementBuffer>> _clearing_buffers;
   std::vector<rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr> _buffer_enabler_servers;
 
-  bool _publish_voxels, _mapping_mode, was_reset_, _autosaving_enabled;
+  bool _publish_voxels, _mapping_mode, was_reset_, _autosaving_enabled, _should_load_navigation_data;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _voxel_pub;
   rclcpp::Service<spatio_temporal_voxel_layer::srv::SaveGrid>::SharedPtr _grid_saver;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _save_stvl_map_srv;

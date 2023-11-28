@@ -128,7 +128,10 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   node->get_parameter(name_ + ".autosaving_enabled", _autosaving_enabled);
   // path to the stvl map path
   declareParameter("stvl_map_file", rclcpp::ParameterValue(std::string("")));
-  node->get_parameter(name_ + ".stvl_map_file", _stvl_map_file);  
+  node->get_parameter(name_ + ".stvl_map_file", _stvl_map_file);
+  // enable loading of nav data
+  declareParameter("should_load_navigation_data", rclcpp::ParameterValue(false));
+  node->get_parameter(name_ + ".should_load_navigation_data", _should_load_navigation_data);
   // if mapping, how often to save a map for safety
   declareParameter("map_save_duration", rclcpp::ParameterValue(60.0));
   node->get_parameter(name_ + ".map_save_duration", map_save_time);
@@ -385,11 +388,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
 
 void SpatioTemporalVoxelLayer::InitializeVoxelGrid(const std::shared_ptr<rclcpp::Clock> & clock)
 {
-  // TODO: Decide how to handle should_load_navigation_data
-  // ros::NodeHandle namespace_nh;
-  // bool should_load_navigation_data = namespace_nh.param("should_load_navigation_data", false);
-  
-  bool should_load_navigation_data = true;
+  bool should_load_navigation_data = _should_load_navigation_data;
   bool stvl_ready = false;
   while (!stvl_ready)
   {
@@ -984,8 +983,6 @@ void SpatioTemporalVoxelLayer::EraseStvlMapCallback(
 rcl_interfaces::msg::SetParametersResult
 SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
 {
-  //TODO: Decide should we move changes form DynamicReconfigureCallback in ROS 1
-
   auto result = rcl_interfaces::msg::SetParametersResult();
   for (auto parameter : parameters) {
     const auto & type = parameter.get_type();
