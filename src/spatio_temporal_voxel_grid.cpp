@@ -102,7 +102,7 @@ void SpatioTemporalVoxelGrid::InitializeGrid(void)
 }
 
 /*****************************************************************************/
-void SpatioTemporalVoxelGrid::InitializeGridFromFile(std::string filename)
+void SpatioTemporalVoxelGrid::InitializeGridFromFile(const std::string & filename)
 /*****************************************************************************/
 {
   openvdb::initialize();

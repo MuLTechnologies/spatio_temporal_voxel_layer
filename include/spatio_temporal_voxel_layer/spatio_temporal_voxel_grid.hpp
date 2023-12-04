@@ -157,7 +157,7 @@ public:
 protected:
   // Initialize grid metadata and library
   void InitializeGrid(void);
-  void InitializeGridFromFile(std::string filename);
+  void InitializeGridFromFile(const std::string & filename);
 
   // grid accessor methods
   bool MarkGridPoint(const openvdb::Coord & pt, const double & value) const;
