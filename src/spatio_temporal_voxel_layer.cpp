@@ -664,7 +664,7 @@ void SpatioTemporalVoxelLayer::reset(void)
   boost::recursive_mutex::scoped_lock lock(_voxel_grid_lock);
   // reset layer
   Costmap2D::resetMaps();
-  // Removed to stop the global voxel grid from beeing deleted
+  // Removed to stop the global voxel grid from being deleted
   // this->ResetGrid();
 
   current_ = false;
