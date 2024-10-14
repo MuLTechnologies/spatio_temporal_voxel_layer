@@ -670,7 +670,7 @@ void SpatioTemporalVoxelLayer::reset(void)
   current_ = false;
   was_reset_ = true;
 
-  // Removed to stop the global voxel grid from beeing deleted
+  // Removed to stop the global voxel grid from being deleted
   // observation_buffers_iter it = _observation_buffers.begin();
   // for (; it != _observation_buffers.end(); ++it) {
   //   (*it)->ResetLastUpdatedTime();
