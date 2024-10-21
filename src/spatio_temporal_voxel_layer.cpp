@@ -164,6 +164,11 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   _grid_saver = node->create_service<spatio_temporal_voxel_layer::srv::SaveGrid>(
     "save_grid", save_grid_callback, rmw_qos_profile_services_default, callback_group_);
 
+  auto clear_grid_around_pose_callback = std::bind(
+    &SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback, this, _1, _2, _3);
+  _clear_grid_around_pose_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
+    "clear_grid_around_pose", clear_grid_around_pose_callback, rmw_qos_profile_services_default, callback_group_);
+
   auto save_stvl_map_callback = std::bind(
     &SpatioTemporalVoxelLayer::SaveStvlMapCallback, this, _1, _2, _3);
   _save_stvl_map_srv = node->create_service<std_srvs::srv::Trigger>(
@@ -898,6 +903,27 @@ void SpatioTemporalVoxelLayer::SaveGridCallback(
 }
 
 /*****************************************************************************/
+void SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback(
+  const std::shared_ptr<rmw_request_id_t>/*header*/,
+  std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Request> req,
+  std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Response> resp)
+/*****************************************************************************/
+{
+  boost::recursive_mutex::scoped_lock lock(_voxel_grid_lock);
+  try
+  {
+    clearCostmapLayerAroundPose(req->pose.pose.position.x, req->pose.pose.position.y, req->reset_distance);
+    resp->status = true;
+    return;
+  }
+  catch(const std::exception& e)
+  {
+    RCLCPP_WARN_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
+  }
+  resp->status = false;
+}
+
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::SaveStvlMapCallback(
   const std::shared_ptr<rmw_request_id_t>/*header*/,
   const std::shared_ptr<std_srvs::srv::Trigger::Request>,
@@ -1110,6 +1136,26 @@ void SpatioTemporalVoxelLayer::clearArea(
   boost::recursive_mutex::scoped_lock lock(_voxel_grid_lock);
   _voxel_grid->ResetGridArea(start_world, end_world, invert_area);
   CostmapLayer::clearArea(start_x, start_y, end_x, end_y, invert_area);
+}
+
+void SpatioTemporalVoxelLayer::clearCostmapLayerAroundPose(
+  double pose_x, double pose_y, double reset_distance)
+{
+  double start_point_x = pose_x - reset_distance / 2;
+  double start_point_y = pose_y - reset_distance / 2;
+  double end_point_x = start_point_x + reset_distance;
+  double end_point_y = start_point_y + reset_distance;
+
+  int start_x, start_y, end_x, end_y;
+  this->worldToMapEnforceBounds(start_point_x, start_point_y, start_x, start_y);
+  this->worldToMapEnforceBounds(end_point_x, end_point_y, end_x, end_y);
+
+  // Clear area is called with invert=true as it esnures only the area inside is cleared
+  clearArea(start_x, start_y, end_x, end_y, true);
+
+  double ox = this->getOriginX(), oy = this->getOriginY();
+  double width = this->getSizeInMetersX(), height = this->getSizeInMetersY();
+  this->addExtraBounds(ox, oy, ox + width, oy + height);
 }
 
 }  // namespace spatio_temporal_voxel_layer

@@ -67,6 +67,7 @@
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "geometry_msgs/msg/point.hpp"
 #include "spatio_temporal_voxel_layer/srv/save_grid.hpp"
+#include "nav2_msgs/srv/clear_grid_around_pose.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_srvs/srv/trigger.hpp"
 // projector
@@ -135,6 +136,12 @@ public:
     std::shared_ptr<spatio_temporal_voxel_layer::srv::SaveGrid::Request> req,
     std::shared_ptr<spatio_temporal_voxel_layer::srv::SaveGrid::Response> resp);
 
+  // Clearing grid around a pose
+  void ClearGridAroundPoseCallback(
+    const std::shared_ptr<rmw_request_id_t>/*header*/,
+    std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Request> req,
+    std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Response> resp);
+
   // Map saving service callbacks
   void SaveStvlMapCallback(
     const std::shared_ptr<rmw_request_id_t>/*header*/, 
@@ -179,6 +186,10 @@ private:
   rcl_interfaces::msg::SetParametersResult
     dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
 
+  // Internal method for clearing the layer around a pose
+  void clearCostmapLayerAroundPose(
+    double pose_x, double pose_y, double reset_distance);
+
   laser_geometry::LaserProjection _laser_projector;
   std::vector<std::shared_ptr<message_filters::SubscriberBase<rclcpp_lifecycle::LifecycleNode>>>
     _observation_subscribers;
@@ -191,6 +202,7 @@ private:
   bool _publish_voxels, _mapping_mode, was_reset_, _autosaving_enabled, _should_load_navigation_data;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _voxel_pub;
   rclcpp::Service<spatio_temporal_voxel_layer::srv::SaveGrid>::SharedPtr _grid_saver;
+  rclcpp::Service<nav2_msgs::srv::ClearGridAroundPose>::SharedPtr _clear_grid_around_pose_srv;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _save_stvl_map_srv;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _erase_stvl_map_srv;
   std::unique_ptr<rclcpp::Duration> _map_save_duration;
