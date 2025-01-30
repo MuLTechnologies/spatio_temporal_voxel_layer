@@ -151,6 +151,10 @@ public:
     const std::shared_ptr<rmw_request_id_t>/*header*/, 
     std::shared_ptr<std_srvs::srv::Trigger::Request>, 
     std::shared_ptr<std_srvs::srv::Trigger::Response> resp);
+  void ClearEntireGridCallback(
+    const std::shared_ptr<rmw_request_id_t>/*header*/, 
+    std::shared_ptr<std_srvs::srv::Trigger::Request>, 
+    std::shared_ptr<std_srvs::srv::Trigger::Response> resp);
 
 private:
   // Sensor callbacks
@@ -205,6 +209,7 @@ private:
   rclcpp::Service<nav2_msgs::srv::ClearGridAroundPose>::SharedPtr _clear_grid_around_pose_srv;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _save_stvl_map_srv;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _erase_stvl_map_srv;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _clear_entire_grid_srv;
   std::unique_ptr<rclcpp::Duration> _map_save_duration;
   rclcpp::Time _last_map_save_time;
   std::string _stvl_map_file;
