@@ -179,6 +179,11 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   _erase_stvl_map_srv = node->create_service<std_srvs::srv::Trigger>(
     "spatiotemporal_voxel_grid/erase_stvl_map", erase_stvl_map_callback, rmw_qos_profile_services_default, callback_group_);
 
+  auto clear_entire_grid_callback = std::bind(
+    &SpatioTemporalVoxelLayer::ClearEntireGridCallback, this, _1, _2, _3);
+  _clear_entire_grid_srv = node->create_service<std_srvs::srv::Trigger>(
+    "spatiotemporal_voxel_grid/clear_entire_grid", clear_entire_grid_callback, rmw_qos_profile_services_default, callback_group_);
+
   if(_mapping_mode)
   {
     InitializeVoxelGrid(node->get_clock());
@@ -1003,6 +1008,25 @@ void SpatioTemporalVoxelLayer::EraseStvlMapCallback(
     resp->success = false;
     resp->message = "Failed to clear current stvl map";
   }
+
+  return;
+}
+
+/*****************************************************************************/
+void SpatioTemporalVoxelLayer::ClearEntireGridCallback(
+  const std::shared_ptr<rmw_request_id_t>/*header*/,
+  const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+  std::shared_ptr<std_srvs::srv::Trigger::Response> resp)
+/*****************************************************************************/
+{
+  if (!_voxel_grid->ResetGrid())
+  {
+    resp->success = false;
+    resp->message = "Failed to clear current stvl map";
+  }
+
+  resp->success = true;
+  resp->message = "Stvl grid cleared successfully";
 
   return;
 }
