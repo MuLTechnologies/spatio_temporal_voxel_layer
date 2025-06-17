@@ -99,8 +99,12 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
   pt_.reserve(2 * deflected_vecs.size());
   std::vector<Eigen::Vector3d>::iterator it;
   for (it = deflected_vecs.begin(); it != deflected_vecs.end(); ++it) {
-    pt_.push_back(*(it) * _min_d);
-    pt_.push_back(*(it) * _max_d);
+    // Here we calculate the min/max_d_on_vec in a way that the 2 planes at the end are actually 
+    // distant from the origin by the _min/max_d as we calculate the points based on the distance on the vector
+    auto min_d_on_vec = _min_d/it->z();
+    auto max_d_on_vec = _max_d/it->z();
+    pt_.push_back(*(it) * min_d_on_vec);
+    pt_.push_back(*(it) * max_d_on_vec);
   }
 
   assert(pt_.size() == 8);
