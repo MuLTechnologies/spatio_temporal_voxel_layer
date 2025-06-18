@@ -157,32 +157,32 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   sub_opt.callback_group = callback_group_;
 
   _voxel_pub = node->create_publisher<sensor_msgs::msg::PointCloud2>(
-    "voxel_grid", rclcpp::QoS(1), pub_opt);
+    getName() + "/voxel_grid", rclcpp::QoS(1), pub_opt);
 
   auto save_grid_callback = std::bind(
     &SpatioTemporalVoxelLayer::SaveGridCallback, this, _1, _2, _3);
   _grid_saver = node->create_service<spatio_temporal_voxel_layer::srv::SaveGrid>(
-    "save_grid", save_grid_callback, rmw_qos_profile_services_default, callback_group_);
+    getName() + "/save_grid", save_grid_callback, rmw_qos_profile_services_default, callback_group_);
 
   auto clear_grid_around_pose_callback = std::bind(
     &SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback, this, _1, _2, _3);
   _clear_grid_around_pose_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
-    "clear_grid_around_pose", clear_grid_around_pose_callback, rmw_qos_profile_services_default, callback_group_);
+    getName() + "/clear_grid_around_pose", clear_grid_around_pose_callback, rmw_qos_profile_services_default, callback_group_);
 
   auto save_stvl_map_callback = std::bind(
     &SpatioTemporalVoxelLayer::SaveStvlMapCallback, this, _1, _2, _3);
   _save_stvl_map_srv = node->create_service<std_srvs::srv::Trigger>(
-    "spatiotemporal_voxel_grid/save_stvl_map", save_stvl_map_callback, rmw_qos_profile_services_default, callback_group_);
+    getName() + "/spatiotemporal_voxel_grid/save_stvl_map", save_stvl_map_callback, rmw_qos_profile_services_default, callback_group_);
 
   auto erase_stvl_map_callback = std::bind(
     &SpatioTemporalVoxelLayer::EraseStvlMapCallback, this, _1, _2, _3);
   _erase_stvl_map_srv = node->create_service<std_srvs::srv::Trigger>(
-    "spatiotemporal_voxel_grid/erase_stvl_map", erase_stvl_map_callback, rmw_qos_profile_services_default, callback_group_);
+    getName() + "/spatiotemporal_voxel_grid/erase_stvl_map", erase_stvl_map_callback, rmw_qos_profile_services_default, callback_group_);
 
   auto clear_entire_grid_callback = std::bind(
     &SpatioTemporalVoxelLayer::ClearEntireGridCallback, this, _1, _2, _3);
   _clear_entire_grid_srv = node->create_service<std_srvs::srv::Trigger>(
-    "spatiotemporal_voxel_grid/clear_entire_grid", clear_entire_grid_callback, rmw_qos_profile_services_default, callback_group_);
+    getName() + "/spatiotemporal_voxel_grid/clear_entire_grid", clear_entire_grid_callback, rmw_qos_profile_services_default, callback_group_);
 
   if(_mapping_mode)
   {
