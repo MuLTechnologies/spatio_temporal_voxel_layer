@@ -189,7 +189,7 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
     frustum->SetPosition(it->_origin);
     frustum->SetOrientation(it->_orientation);
     frustum->TransformModel();
-    obs_frustums.emplace_back(frustum, it->_decay_acceleration);
+    obs_frustums.emplace_back(frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
   }
   TemporalClearAndGenerateCostmap(obs_frustums, cleared_cells);
 }
@@ -225,25 +225,28 @@ void SpatioTemporalVoxelGrid::TemporalClearAndGenerateCostmap(
       if (frustum_it->frustum->IsInside(pose_world) ) {
         frustum_cycle = true;
 
-        const double frustum_acceleration = GetFrustumAcceleration(
-          time_since_marking, frustum_it->accel_factor);
+        // Clear voxels within frustum only if decay is enabled
+        if (!frustum_it->is_decay_disabled) {
+          const double frustum_acceleration = GetFrustumAcceleration(
+            time_since_marking, frustum_it->accel_factor);
 
-        const double time_until_decay = base_duration_to_decay -
-          frustum_acceleration;
-        if (time_until_decay < 0.) {
-          // expired by acceleration
-          cleared_point = true;
-          if (!this->ClearGridPoint(pt_index)) {
-            std::cout << "Failed to clear point." << std::endl;
-          }
-          break;
-        } else {
-          const double updated_mark = cit_grid.getValue() -
+          const double time_until_decay = base_duration_to_decay -
             frustum_acceleration;
-          if (!this->MarkGridPoint(pt_index, updated_mark)) {
-            std::cout << "Failed to update mark." << std::endl;
+          if (time_until_decay < 0.) {
+            // expired by acceleration
+            cleared_point = true;
+            if (!this->ClearGridPoint(pt_index)) {
+              std::cout << "Failed to clear point." << std::endl;
+            }
+            break;
+          } else {
+            const double updated_mark = cit_grid.getValue() -
+              frustum_acceleration;
+            if (!this->MarkGridPoint(pt_index, updated_mark)) {
+              std::cout << "Failed to update mark." << std::endl;
+            }
+            break;
           }
-          break;
         }
       }
     }
@@ -447,7 +450,7 @@ void SpatioTemporalVoxelGrid::ResetGridArea(
   boost::unique_lock<boost::mutex> lock(_grid_lock);
 
   openvdb::DoubleGrid::ValueOnCIter cit_grid = _grid->cbeginValueOn();
-  for (cit_grid; cit_grid.test(); ++cit_grid)
+  for (; cit_grid.test(); ++cit_grid)
   {
     const openvdb::Coord pt_index(cit_grid.getCoord());
     const openvdb::Vec3d pose_world = this->IndexToWorld(pt_index);
