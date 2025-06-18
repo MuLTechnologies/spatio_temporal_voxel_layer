@@ -612,10 +612,11 @@ bool SpatioTemporalVoxelLayer::updateFootprint(
   double * min_y, double * max_x, double * max_y)
 /*****************************************************************************/
 {
+  // THe footprint update would be necessary either ways
   // updates layer costmap to include footprint for clearing in voxel grid
-  if (!_update_footprint_enabled) {
-    return false;
-  }
+  // if (!_update_footprint_enabled) {
+  //   return false;
+  // }
   nav2_costmap_2d::transformFootprint(
     robot_x, robot_y, robot_yaw,
     getFootprint(), _transformed_footprint);
@@ -866,6 +867,8 @@ void SpatioTemporalVoxelLayer::updateBounds(
   // mark observations
   _voxel_grid->Mark(marking_observations);
 
+
+
   // update the ROS Layered Costmap
   UpdateROSCostmap(min_x, min_y, max_x, max_y, cleared_cells);
 
@@ -878,9 +881,11 @@ void SpatioTemporalVoxelLayer::updateBounds(
     pc2->header.stamp = node->now();
     _voxel_pub->publish(*pc2);
   }
-
+  
   // update footprint
   updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+
+  clearVoxelGridInsidePolygon(_transformed_footprint);
 }
 
 /*****************************************************************************/
@@ -1187,6 +1192,33 @@ void SpatioTemporalVoxelLayer::clearCostmapLayerAroundPose(
   double ox = this->getOriginX(), oy = this->getOriginY();
   double width = this->getSizeInMetersX(), height = this->getSizeInMetersY();
   this->addExtraBounds(ox, oy, ox + width, oy + height);
+}
+
+void SpatioTemporalVoxelLayer::clearVoxelGridInsidePolygon(
+  const std::vector<geometry_msgs::msg::Point> &polygon)
+{
+  if (polygon.empty()) {
+      return;
+  }
+
+  // First, we need to determine the bounding box of the given polygon
+  double min_x = std::numeric_limits<double>::max(), min_y = std::numeric_limits<double>::max();
+  double max_x = std::numeric_limits<double>::lowest(), max_y = std::numeric_limits<double>::lowest();
+
+  for (const auto& point : polygon) {
+    min_x = std::min(min_x, point.x);
+    min_y = std::min(min_y, point.y);
+    max_x = std::max(max_x, point.x);
+    max_y = std::max(max_y, point.y);
+  }
+
+  // Create occupancy cells for the bounding box corners
+  volume_grid::occupany_cell start{min_x, min_y};
+  volume_grid::occupany_cell end{max_x, max_y};
+
+  // Reset the grid area defined by start and end occupancy cells
+  // Using invert_area = true to clear the area strictly inside the defined bounding box
+  _voxel_grid->ResetGridArea(start, end, true);
 }
 
 }  // namespace spatio_temporal_voxel_layer

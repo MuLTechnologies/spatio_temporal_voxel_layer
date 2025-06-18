@@ -194,6 +194,9 @@ private:
   void clearCostmapLayerAroundPose(
     double pose_x, double pose_y, double reset_distance);
 
+  void clearVoxelGridInsidePolygon(
+    const std::vector<geometry_msgs::msg::Point> &polygon);
+
   laser_geometry::LaserProjection _laser_projector;
   std::vector<std::shared_ptr<message_filters::SubscriberBase<rclcpp_lifecycle::LifecycleNode>>>
     _observation_subscribers;
