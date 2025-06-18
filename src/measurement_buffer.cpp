@@ -57,7 +57,7 @@ MeasurementBuffer::MeasurementBuffer(
   const std::string & sensor_frame, const double & tf_tolerance,
   const double & min_d, const double & max_d, const double & vFOV,
   const double & vFOVPadding, const double & hFOV,
-  const double & decay_acceleration, const bool & marking,
+  const double & decay_acceleration, const bool & disable_decay_inside_frustum, const bool & marking,
   const bool & clearing, const double & voxel_size, const Filters & filter,
   const int & voxel_min_points, const bool & enabled,
   const bool & clear_buffer_after_reading, const ModelType & model_type,
@@ -70,9 +70,9 @@ MeasurementBuffer::MeasurementBuffer(
   _topic_name(topic_name), _min_obstacle_height(min_obstacle_height),
   _max_obstacle_height(max_obstacle_height), _obstacle_range(obstacle_range),
   _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d),
-  _vertical_fov(vFOV), _vertical_fov_padding(vFOVPadding),
-  _horizontal_fov(hFOV), _decay_acceleration(decay_acceleration),
-  _voxel_size(voxel_size), _marking(marking), _clearing(clearing),
+  _vertical_fov(vFOV), _vertical_fov_padding(vFOVPadding), _horizontal_fov(hFOV),
+  _decay_acceleration(decay_acceleration), _voxel_size(voxel_size),
+  _disable_decay_inside_frustum(disable_decay_inside_frustum), _marking(marking), _clearing(clearing),
   _filter(filter), _voxel_min_points(voxel_min_points),
   _clear_buffer_after_reading(clear_buffer_after_reading),
   _enabled(enabled), _model_type(model_type), clock_(clock), logger_(logger)
@@ -128,6 +128,7 @@ void MeasurementBuffer::BufferROSCloud(
       _vertical_fov_padding;
     _observation_list.front()._horizontal_fov_in_rad = _horizontal_fov;
     _observation_list.front()._decay_acceleration = _decay_acceleration;
+    _observation_list.front()._disable_decay_inside_frustum = _disable_decay_inside_frustum;
     _observation_list.front()._clearing = _clearing;
     _observation_list.front()._marking = _marking;
     _observation_list.front()._model_type = _model_type;
@@ -329,6 +330,13 @@ void MeasurementBuffer::SetHorizontalFovAngle(const double & horizontal_fov_angl
 /*****************************************************************************/
 {
   _horizontal_fov = horizontal_fov_angle;
+}
+
+/*****************************************************************************/
+void MeasurementBuffer::SetFrustumPersistent(const bool & disable_decay_inside_frustum)
+/*****************************************************************************/
+{
+  _disable_decay_inside_frustum = disable_decay_inside_frustum;
 }
 
 /*****************************************************************************/
