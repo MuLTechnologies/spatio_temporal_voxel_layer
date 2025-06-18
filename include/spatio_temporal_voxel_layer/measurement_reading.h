@@ -50,7 +50,8 @@
 enum ModelType
 {
   DEPTH_CAMERA = 0,
-  THREE_DIMENSIONAL_LIDAR = 1
+  THREE_DIMENSIONAL_LIDAR = 1,
+  VIRTUAL_PROXIMITY_SHIELD = 2
 };
 
 namespace observation
