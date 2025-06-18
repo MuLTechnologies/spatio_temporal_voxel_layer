@@ -1036,18 +1036,11 @@ void SpatioTemporalVoxelLayer::ClearEntireGridCallback(
   {
     resp->success = false;
     resp->message = "Failed to clear current stvl map";
-    RCLCPP_ERROR(       
-      logger_,
-      "SpatioTemporalVoxelGrid: ClearEntireGridCallback: %s",
-      resp->message.c_str());
-    return;
   }
+
   resp->success = true;
   resp->message = "Stvl grid cleared successfully";
-  RCLCPP_INFO(       
-    logger_,
-    "SpatioTemporalVoxelGrid: ClearEntireGridCallback: %s ",
-    resp->message.c_str());
+
   return;
 }
 
