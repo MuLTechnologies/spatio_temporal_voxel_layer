@@ -183,12 +183,12 @@ void DepthCameraFrustum::TransformModel(void)
   // Visualize frustum points - disabled as not useful and reducing visibility
   // for (uint i = 0; i != _frustum_pts.size(); i++) {
   //   // frustum pts
-  //   msg.header.frame_id = std::string("map");   // Use global_frame of costmap
+  //   msg.header.frame_id = std::string("odom");   // Use global_frame of costmap
   //   msg.type = visualization_msgs::msg::Marker::SPHERE;
   //   msg.action = visualization_msgs::msg::Marker::ADD;
-  //   msg.scale.x = 0.15;
-  //   msg.scale.y = 0.15;
-  //   msg.scale.z = 0.15;
+  //   msg.scale.x = 0.1;
+  //   msg.scale.y = 0.1;
+  //   msg.scale.z = 0.1;
   //   msg.pose.orientation.w = 1.0;
   //   msg.header.stamp = _node->now();
   //   msg.ns = "pt_" + std::to_string(i);
@@ -260,9 +260,9 @@ void DepthCameraFrustum::TransformModel(void)
   //   msg.pose.position.z -= 0.15;
   //   msg.type = visualization_msgs::msg::Marker::ARROW;
   //   msg.ns = "normal_" + std::to_string(i);
-  //   msg.scale.y = 0.07;
-  //   msg.scale.z = 0.07;
-  //   msg.scale.x = 1;
+  //   msg.scale.x = 0.03; // shaft diameter
+  //   msg.scale.y = 0.07; // head diameter
+  //   msg.scale.z = 0.1;  // head length
   //   msg.color.g = 1.0f;
   //   const VectorWithPt3D nml = _plane_normals.at(i);
   //   msg.pose.position.x = nml.initial_point[0];
