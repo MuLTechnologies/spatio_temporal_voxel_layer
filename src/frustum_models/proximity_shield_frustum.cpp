@@ -1,0 +1,334 @@
+/*********************************************************************
+ *
+ * Software License Agreement
+ *
+ *  Copyright (c) 2018, Simbe Robotics, Inc.
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of Simbe Robotics, Inc. nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Author: Steve Macenski (steven.macenski@simberobotics.com)
+ *********************************************************************/
+
+#include <vector>
+#include "spatio_temporal_voxel_layer/frustum_models/proximity_shield_frustum.hpp"
+
+namespace geometry
+{
+
+/*****************************************************************************/
+ProximityShieldFrustum::ProximityShieldFrustum(
+  const double & vFOV, const double & hFOV, const double & min_dist,
+  const double & max_dist)
+: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist)
+/*****************************************************************************/
+{
+  _valid_frustum = false;
+  #if VISUALIZE_FRUSTUM_PROXIMITY_SHIELD
+  _node = std::make_shared<rclcpp::Node>("frustum_publisher");
+  _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
+  rclcpp::sleep_for(std::chrono::milliseconds(100));
+  #endif
+  this->ComputePlaneNormals();
+}
+
+/*****************************************************************************/
+ProximityShieldFrustum::~ProximityShieldFrustum(void)
+/*****************************************************************************/
+{
+}
+
+/*****************************************************************************/
+void ProximityShieldFrustum::ComputePlaneNormals(void)
+/*****************************************************************************/
+{
+  // give ability to construct with bogus values
+  if (_vFOV == 0 && _hFOV == 0) {
+    _valid_frustum = false;
+    return;
+  }
+
+  double size_x = 0.8, size_y = 0.4;
+
+  // Create frustum vertices
+  std::vector<Eigen::Vector3d> pt_;
+  pt_.reserve(8);
+
+  Eigen::Vector3d near_pt(size_x / 2., size_y / 2., _min_d);
+  Eigen::Vector3d far_pt(tan(_vFOV/2), tan(_hFOV/2), _max_d);
+  pt_.push_back(near_pt);
+  pt_.push_back(near_pt + far_pt);
+
+  near_pt = Eigen::Vector3d(-size_x / 2., size_y / 2., _min_d);
+  far_pt = Eigen::Vector3d(-tan(_vFOV/2), tan(_hFOV/2), _max_d);
+  pt_.push_back(near_pt);
+  pt_.push_back(near_pt + far_pt);
+
+  near_pt = Eigen::Vector3d(-size_x / 2., -size_y / 2., _min_d);
+  far_pt = Eigen::Vector3d(-tan(_vFOV/2), -tan(_hFOV/2), _max_d);
+  pt_.push_back(near_pt);
+  pt_.push_back(near_pt + far_pt);
+
+  near_pt = Eigen::Vector3d(size_x / 2., -size_y / 2., _min_d);
+  far_pt = Eigen::Vector3d(tan(_vFOV/2), -tan(_hFOV/2), _max_d);
+  pt_.push_back(near_pt);
+  pt_.push_back(near_pt + far_pt);
+
+  // cross each plane and get normals
+  const Eigen::Vector3d v_01(pt_[1][0] - pt_[0][0],
+    pt_[1][1] - pt_[0][1], pt_[1][2] - pt_[0][2]);
+  const Eigen::Vector3d v_13(pt_[3][0] - pt_[1][0],
+    pt_[3][1] - pt_[1][1], pt_[3][2] - pt_[1][2]);
+  Eigen::Vector3d T_n(v_13.cross(v_01));
+  T_n.normalize();
+  _plane_normals.push_back(VectorWithPt3D(T_n[0], T_n[1], T_n[2], pt_[0]));
+
+  const Eigen::Vector3d v_23(pt_[3][0] - pt_[2][0],
+    pt_[3][1] - pt_[2][1], pt_[3][2] - pt_[2][2]);
+  const Eigen::Vector3d v_35(pt_[5][0] - pt_[3][0],
+    pt_[5][1] - pt_[3][1], pt_[5][2] - pt_[3][2]);
+  Eigen::Vector3d T_l(v_35.cross(v_23));
+  T_l.normalize();
+  _plane_normals.push_back(VectorWithPt3D(T_l[0], T_l[1], T_l[2], pt_[2]));
+
+  const Eigen::Vector3d v_45(pt_[5][0] - pt_[4][0],
+    pt_[5][1] - pt_[4][1], pt_[5][2] - pt_[4][2]);
+  const Eigen::Vector3d v_57(pt_[7][0] - pt_[5][0],
+    pt_[7][1] - pt_[5][1], pt_[7][2] - pt_[5][2]);
+  Eigen::Vector3d T_b(v_57.cross(v_45));
+  T_b.normalize();
+  _plane_normals.push_back(VectorWithPt3D(T_b[0], T_b[1], T_b[2], pt_[4]));
+
+  const Eigen::Vector3d v_67(pt_[7][0] - pt_[6][0],
+    pt_[7][1] - pt_[6][1], pt_[7][2] - pt_[6][2]);
+  const Eigen::Vector3d v_71(pt_[1][0] - pt_[7][0],
+    pt_[1][1] - pt_[7][1], pt_[1][2] - pt_[7][2]);
+  Eigen::Vector3d T_r(v_71.cross(v_67));
+  T_r.normalize();
+  _plane_normals.push_back(VectorWithPt3D(T_r[0], T_r[1], T_r[2], pt_[6]));
+
+  // far plane
+  Eigen::Vector3d T_1(v_57.cross(v_71));
+  T_1.normalize();
+  _plane_normals.push_back(VectorWithPt3D(T_1[0], T_1[1], T_1[2], pt_[7]));
+
+  // near plane
+  _plane_normals.push_back(
+    VectorWithPt3D(
+      T_1[0], T_1[1], T_1[2], pt_[2]) * -1);
+
+  #if VISUALIZE_FRUSTUM_PROXIMITY_SHIELD
+  _frustum_pts = pt_;
+  #endif
+
+  assert(_plane_normals.size() == 6);
+  _valid_frustum = true;
+}
+
+/*****************************************************************************/
+void ProximityShieldFrustum::TransformModel(void)
+/*****************************************************************************/
+{
+  if (!_valid_frustum) {
+    return;
+  }
+
+  Eigen::Affine3d T = Eigen::Affine3d::Identity();
+  T.pretranslate(_orientation.inverse() * _position);
+  T.prerotate(_orientation);
+
+  std::vector<VectorWithPt3D>::iterator it;
+  for (it = _plane_normals.begin(); it != _plane_normals.end(); ++it) {
+    it->TransformFrames(T);
+  }
+
+  #if VISUALIZE_FRUSTUM_PROXIMITY_SHIELD
+  visualization_msgs::msg::MarkerArray msg_list;
+  visualization_msgs::msg::Marker msg;
+  // Visualize frustum points - disabled as not useful and reducing visibility
+  // for (uint i = 0; i != _frustum_pts.size(); i++) {
+  //   // frustum pts
+  //   msg.header.frame_id = std::string("odom");   // Use global_frame of costmap
+  //   msg.type = visualization_msgs::msg::Marker::SPHERE;
+  //   msg.action = visualization_msgs::msg::Marker::ADD;
+  //   msg.scale.x = 0.1;
+  //   msg.scale.y = 0.1;
+  //   msg.scale.z = 0.1;
+  //   msg.pose.orientation.w = 1.0;
+  //   msg.header.stamp = _node->now();
+  //   msg.ns = "pt_" + std::to_string(i);
+  //   msg.color.g = 1.0f;
+  //   msg.color.a = 1.0;
+  //   Eigen::Vector3d T_pt = T * _frustum_pts.at(i);
+  //   geometry_msgs::msg::Pose pnt;
+  //   pnt.position.x = T_pt[0];
+  //   pnt.position.y = T_pt[1];
+  //   pnt.position.z = T_pt[2];
+  //   pnt.orientation.w = 1;
+  //   msg.pose = pnt;
+  //   msg_list.markers.push_back(msg);
+
+  //   // point numbers
+  //   msg.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+  //   msg.ns = std::to_string(i);
+  //   msg.pose.position.z += 0.15;
+  //   msg.text = std::to_string(i);
+  //   msg_list.markers.push_back(msg);
+  // }
+
+  // frustum lines
+  msg.header.frame_id = std::string("odom");   // Use global_frame of costmap
+  msg.type = visualization_msgs::msg::Marker::LINE_STRIP;
+  msg.scale.x = 0.02;   // line width
+  msg.pose.orientation.w = 1.0;
+  msg.pose.position.x = 0;
+  msg.pose.position.y = 0;
+  msg.pose.position.z = 0;
+  msg.header.stamp = _node->now();
+  msg.color.g = 1.0f;
+  msg.color.a = 1.0;
+
+  // annoying but only evaluates once
+  static const std::vector<int> v1 = {0, 2};
+  static const std::vector<int> v2 = {2, 4};
+  static const std::vector<int> v3 = {4, 6};
+  static const std::vector<int> v4 = {6, 0};
+  static const std::vector<int> v5 = {1, 3};
+  static const std::vector<int> v6 = {3, 5};
+  static const std::vector<int> v7 = {5, 7};
+  static const std::vector<int> v8 = {7, 1};
+  static const std::vector<int> v9 = {0, 1};
+  static const std::vector<int> v10 = {2, 3};
+  static const std::vector<int> v11 = {4, 5};
+  static const std::vector<int> v12 = {6, 7};
+  static const std::vector<std::vector<int>> v_t = \
+  {v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12};
+
+  for (uint i = 0; i != v_t.size(); i++) {
+    // frustum lines
+    msg.ns = "line_" + std::to_string(i);
+    msg.points.clear();
+
+    for (uint j = 0; j != v_t[i].size(); j++) {
+      Eigen::Vector3d T_pt = T * _frustum_pts.at(v_t[i][j]);
+      geometry_msgs::msg::Point point;
+      point.x = T_pt[0];
+      point.y = T_pt[1];
+      point.z = T_pt[2];
+      msg.points.push_back(point);
+    }
+    msg_list.markers.push_back(msg);
+  }
+  // Visualize frustum normal vectors - disabled as not useful and reducing visibility
+  // for (uint i = 0; i != _plane_normals.size(); i++) {
+  //   // normal vectors
+  //   msg.pose.position.z -= 0.15;
+  //   msg.type = visualization_msgs::msg::Marker::ARROW;
+  //   msg.ns = "normal_" + std::to_string(i);
+  //   msg.scale.x = 0.03; // shaft diameter
+  //   msg.scale.y = 0.07; // head diameter
+  //   msg.scale.z = 0.1;  // head length
+  //   msg.color.g = 1.0f;
+  //   const VectorWithPt3D nml = _plane_normals.at(i);
+  //   msg.pose.position.x = nml.initial_point[0];
+  //   msg.pose.position.y = nml.initial_point[1];
+  //   msg.pose.position.z = nml.initial_point[2];
+
+  //   // turn unit vector into a quaternion
+  //   const Eigen::Quaterniond quat =
+  //     Eigen::Quaterniond::FromTwoVectors(
+  //     Eigen::Vector3d::UnitX(),
+  //     Eigen::Vector3d(nml.x, nml.y, nml.z) );
+  //   msg.pose.orientation.x = quat.x();
+  //   msg.pose.orientation.y = quat.y();
+  //   msg.pose.orientation.z = quat.z();
+  //   msg.pose.orientation.w = quat.w();
+
+  //   msg_list.markers.push_back(msg);
+  // }
+  _frustum_pub->publish(msg_list);
+  #endif
+}
+
+/*****************************************************************************/
+bool ProximityShieldFrustum::IsInside(const openvdb::Vec3d & pt)
+/*****************************************************************************/
+{
+  if (!_valid_frustum) {
+    return false;
+  }
+
+  std::vector<VectorWithPt3D>::iterator it;
+  for (it = _plane_normals.begin(); it != _plane_normals.end(); ++it) {
+    Eigen::Vector3d p_delta(pt[0] - it->initial_point[0],
+      pt[1] - it->initial_point[1], pt[2] - it->initial_point[2]);
+    p_delta.normalize();
+
+    if (Dot(*it, p_delta) > 0.) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/*****************************************************************************/
+void ProximityShieldFrustum::SetPosition(const geometry_msgs::msg::Point & origin)
+/*****************************************************************************/
+{
+  _position = Eigen::Vector3d(origin.x, origin.y, origin.z);
+}
+
+/*****************************************************************************/
+void ProximityShieldFrustum::SetOrientation(
+  const geometry_msgs::msg::Quaternion & quat)
+/*****************************************************************************/
+{
+  _orientation = Eigen::Quaterniond(quat.w, quat.x, quat.y, quat.z);
+}
+
+/*****************************************************************************/
+double ProximityShieldFrustum::Dot(
+  const VectorWithPt3D & plane_pt, const openvdb::Vec3d & query_pt) const
+/*****************************************************************************/
+{
+  return plane_pt.x * query_pt[0] +
+         plane_pt.y * query_pt[1] +
+         plane_pt.z * query_pt[2];
+}
+
+/*****************************************************************************/
+double ProximityShieldFrustum::Dot(
+  const VectorWithPt3D & plane_pt, const Eigen::Vector3d & query_pt) const
+/*****************************************************************************/
+{
+  return plane_pt.x * query_pt[0] +
+         plane_pt.y * query_pt[1] +
+         plane_pt.z * query_pt[2];
+}
+
+}  // namespace geometry
