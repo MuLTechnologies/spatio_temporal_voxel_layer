@@ -209,6 +209,8 @@ private:
   void clearVoxelGridInsidePolygon(
     const std::vector<geometry_msgs::msg::Point> &polygon);
 
+  void clearSquareRegion(double robot_x, double robot_y, double clear_range);
+
   laser_geometry::LaserProjection _laser_projector;
   std::vector<std::shared_ptr<message_filters::SubscriberBase<rclcpp_lifecycle::LifecycleNode>>>
     _observation_subscribers;
@@ -237,7 +239,9 @@ private:
   double _voxel_size, _voxel_decay;
   int _combination_method, _mark_threshold;
   volume_grid::GlobalDecayModel _decay_model;
-  bool _update_footprint_enabled, _enabled;
+  bool _clear_layer_under_footprint, _enabled;
+  bool _clear_grid_under_footprint_in_manual_mode;
+  double _auto_grid_clear_range;
   std::vector<geometry_msgs::msg::Point> _transformed_footprint;
   std::vector<observation::MeasurementReading> _static_observations;
   std::unique_ptr<volume_grid::SpatioTemporalVoxelGrid> _voxel_grid;
