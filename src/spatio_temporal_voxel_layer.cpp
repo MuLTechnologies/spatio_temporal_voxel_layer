@@ -645,9 +645,14 @@ void SpatioTemporalVoxelLayer::activate(void)
   for (; buf_it != _observation_buffers.end(); ++buf_it) {
     (*buf_it)->ResetLastUpdatedTime();
   }
+  
+  auto node = node_.lock();
+
+  destination_status_sub_ = node->create_subscription<robo_cart_msgs::msg::DestinationStatus>(
+    "/robo_cart/autonomy_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&SpatioTemporalVoxelLayer::destinationStatusCb, this, _1));
 
   // Add callback for dynamic parametrs
-  auto node = node_.lock();
   dyn_params_handler = node->add_on_set_parameters_callback(
     std::bind(&SpatioTemporalVoxelLayer::dynamicParametersCallback, this, _1));
 }
@@ -686,6 +691,7 @@ void SpatioTemporalVoxelLayer::reset(void)
   // for (; it != _observation_buffers.end(); ++it) {
   //   (*it)->ResetLastUpdatedTime();
   // }
+  is_in_manual_mode_ = true;
 }
 
 /*****************************************************************************/
@@ -885,7 +891,10 @@ void SpatioTemporalVoxelLayer::updateBounds(
   // update footprint
   updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 
-  clearVoxelGridInsidePolygon(_transformed_footprint);
+  if (is_in_manual_mode_) {
+    RCLCPP_WARN_STREAM(logger_, "SpatioTemporalVoxelLayer: HERE CLEAR DUPA");
+    clearVoxelGridInsidePolygon(_transformed_footprint);
+  }
 }
 
 /*****************************************************************************/
@@ -1220,6 +1229,17 @@ void SpatioTemporalVoxelLayer::clearVoxelGridInsidePolygon(
   // Using invert_area = true to clear the area strictly inside the defined bounding box
   _voxel_grid->ResetGridArea(start, end, true);
 }
+
+void SpatioTemporalVoxelLayer::destinationStatusCb(const robo_cart_msgs::msg::DestinationStatus::UniquePtr& msg)
+{
+  if (
+    msg->data == robo_cart_msgs::msg::DestinationStatus::DRIVING || msg->data == robo_cart_msgs::msg::DestinationStatus::CALCULATING) {
+    is_in_manual_mode_ = false;
+  } else {
+    is_in_manual_mode_ = true;
+  }
+}
+
 
 }  // namespace spatio_temporal_voxel_layer
 
