@@ -213,7 +213,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   while (ss >> source) {
     // get the parameters for the specific topic
     double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
-    double min_z, max_z, vFOV, vFOVPadding;
+    double min_z, max_z, vFOV, vFOVPadding, base_length, base_width;
     double hFOV, decay_acceleration, obstacle_range;
     std::string topic, sensor_frame, data_type, filter_str;
     bool inf_is_valid = false, disable_decay_inside_frustum, clearing, marking;
@@ -240,6 +240,8 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     declareParameter(source + "." + "vertical_fov_angle", rclcpp::ParameterValue(0.7));
     declareParameter(source + "." + "vertical_fov_padding", rclcpp::ParameterValue(0.0));
     declareParameter(source + "." + "horizontal_fov_angle", rclcpp::ParameterValue(1.04));
+    declareParameter(source + "." + "base_length", rclcpp::ParameterValue(0.1));
+    declareParameter(source + "." + "base_width", rclcpp::ParameterValue(0.1));
     declareParameter(source + "." + "decay_acceleration", rclcpp::ParameterValue(0.0));
     declareParameter(source + "." + "disable_decay_inside_frustum", rclcpp::ParameterValue(false));
     declareParameter(source + "." + "filter", rclcpp::ParameterValue(std::string("passthrough")));
@@ -274,6 +276,10 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     node->get_parameter(name_ + "." + source + "." + "vertical_fov_padding", vFOVPadding);
     // horizontal FOV angle in rad
     node->get_parameter(name_ + "." + source + "." + "horizontal_fov_angle", hFOV);
+    // length of the base for virtual proximity shield
+    node->get_parameter(name_ + "." + source + "." + "base_length", base_length);
+    // width of the base for virtual proximity shield
+    node->get_parameter(name_ + "." + source + "." + "base_width", base_width);
     // acceleration scales the model's decay in presence of readings
     node->get_parameter(name_ + "." + source + "." + "decay_acceleration", decay_acceleration);
     // makes the voxels within frustum stay persistent (not decay)
@@ -314,7 +320,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
           source, topic,
           observation_keep_time, expected_update_rate, min_obstacle_height,
           max_obstacle_height, obstacle_range, *tf_, _global_frame, sensor_frame,
-          transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV,
+          transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV, base_length, base_width,
           decay_acceleration, disable_decay_inside_frustum, marking, clearing, _voxel_size,
           filter, voxel_min_points, enabled, clear_after_reading, model_type,
           node->get_clock(), node->get_logger())));
@@ -1130,6 +1136,22 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetHorizontalFovAngle(parameter.as_double());
+              buffer->Unlock();
+            }
+          }
+        } else if (name == name_ + "." + source + "." + "base_length") {
+          for (auto & buffer : _observation_buffers) {
+            if (buffer->GetSourceName() == source) {
+              buffer->Lock();
+              buffer->SetBaseLength(parameter.as_double());
+              buffer->Unlock();
+            }
+          }
+        } else if (name == name_ + "." + source + "." + "base_width") {
+          for (auto & buffer : _observation_buffers) {
+            if (buffer->GetSourceName() == source) {
+              buffer->Lock();
+              buffer->SetBaseWidth(parameter.as_double());
               buffer->Unlock();
             }
           }

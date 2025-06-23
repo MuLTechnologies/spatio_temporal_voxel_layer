@@ -57,6 +57,7 @@ MeasurementBuffer::MeasurementBuffer(
   const std::string & sensor_frame, const double & tf_tolerance,
   const double & min_d, const double & max_d, const double & vFOV,
   const double & vFOVPadding, const double & hFOV,
+  const double & base_length, const double & base_width,
   const double & decay_acceleration, const bool & disable_decay_inside_frustum, const bool & marking,
   const bool & clearing, const double & voxel_size, const Filters & filter,
   const int & voxel_min_points, const bool & enabled,
@@ -71,6 +72,7 @@ MeasurementBuffer::MeasurementBuffer(
   _max_obstacle_height(max_obstacle_height), _obstacle_range(obstacle_range),
   _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d),
   _vertical_fov(vFOV), _vertical_fov_padding(vFOVPadding), _horizontal_fov(hFOV),
+  _base_length(base_length), _base_width(base_width),
   _decay_acceleration(decay_acceleration), _voxel_size(voxel_size),
   _disable_decay_inside_frustum(disable_decay_inside_frustum), _marking(marking), _clearing(clearing),
   _filter(filter), _voxel_min_points(voxel_min_points),
@@ -127,6 +129,8 @@ void MeasurementBuffer::BufferROSCloud(
     _observation_list.front()._vertical_fov_padding_in_m =
       _vertical_fov_padding;
     _observation_list.front()._horizontal_fov_in_rad = _horizontal_fov;
+    _observation_list.front()._base_length = _base_length;
+    _observation_list.front()._base_width = _base_width;
     _observation_list.front()._decay_acceleration = _decay_acceleration;
     _observation_list.front()._disable_decay_inside_frustum = _disable_decay_inside_frustum;
     _observation_list.front()._clearing = _clearing;
@@ -330,6 +334,20 @@ void MeasurementBuffer::SetHorizontalFovAngle(const double & horizontal_fov_angl
 /*****************************************************************************/
 {
   _horizontal_fov = horizontal_fov_angle;
+}
+
+/*****************************************************************************/
+void MeasurementBuffer::SetBaseLength(const double & base_length)
+/*****************************************************************************/
+{
+  _base_length = base_length;
+}
+
+/*****************************************************************************/
+void MeasurementBuffer::SetBaseWidth(const double & base_width)
+/*****************************************************************************/
+{
+  _base_width = base_width;
 }
 
 /*****************************************************************************/

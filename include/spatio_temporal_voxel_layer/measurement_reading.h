@@ -71,7 +71,8 @@ struct MeasurementReading
   MeasurementReading(
     geometry_msgs::msg::Point & origin, sensor_msgs::msg::PointCloud2 cloud,
     double obstacle_range, double min_z, double max_z, double vFOV,
-    double vFOVPadding, double hFOV, double decay_acceleration, bool disable_decay_inside_frustum,
+    double vFOVPadding, double hFOV, double base_length, double base_width,
+    double decay_acceleration, bool disable_decay_inside_frustum,
     bool marking, bool clearing, ModelType model_type)
   /*****************************************************************************/
     : _origin(origin),
@@ -82,6 +83,8 @@ struct MeasurementReading
     _vertical_fov_in_rad(vFOV),
     _vertical_fov_padding_in_m(vFOVPadding),
     _horizontal_fov_in_rad(hFOV),
+    _base_length(base_length),
+    _base_width(base_width),
     _marking(marking),
     _clearing(clearing),
     _disable_decay_inside_frustum(disable_decay_inside_frustum),
@@ -110,6 +113,8 @@ struct MeasurementReading
     _vertical_fov_in_rad(obs._vertical_fov_in_rad),
     _vertical_fov_padding_in_m(obs._vertical_fov_padding_in_m),
     _horizontal_fov_in_rad(obs._horizontal_fov_in_rad),
+    _base_length(obs._base_length),
+    _base_width(obs._base_width),
     _marking(obs._marking),
     _clearing(obs._clearing),
     _disable_decay_inside_frustum(obs._disable_decay_inside_frustum),
@@ -122,7 +127,7 @@ struct MeasurementReading
   geometry_msgs::msg::Quaternion _orientation;
   std::shared_ptr < sensor_msgs::msg::PointCloud2 > _cloud;
   double _obstacle_range_in_m, _min_z_in_m, _max_z_in_m;
-  double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad;
+  double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad, _base_length, _base_width;
   double _marking, _clearing, _disable_decay_inside_frustum, _decay_acceleration;
   ModelType _model_type;
 };
