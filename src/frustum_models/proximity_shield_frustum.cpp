@@ -43,9 +43,13 @@ namespace geometry
 
 /*****************************************************************************/
 ProximityShieldFrustum::ProximityShieldFrustum(
-  const double & vFOV, const double & hFOV, const double & min_dist,
-  const double & max_dist)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist)
+  const double & base_length, const double & base_width,
+  const double & vFOV, const double & hFOV,
+  const double & min_dist, const double & max_dist)
+: 
+  _base_length(base_length), _base_width(base_width),
+  _vFOV(vFOV), _hFOV(hFOV),
+  _min_d(min_dist), _max_d(max_dist)
 /*****************************************************************************/
 {
   _valid_frustum = false;
@@ -73,28 +77,26 @@ void ProximityShieldFrustum::ComputePlaneNormals(void)
     return;
   }
 
-  double size_x = 0.8, size_y = 0.4;
-
   // Create frustum vertices
   std::vector<Eigen::Vector3d> pt_;
   pt_.reserve(8);
 
-  Eigen::Vector3d near_pt(size_x / 2., size_y / 2., _min_d);
+  Eigen::Vector3d near_pt(_base_length / 2., _base_width / 2., _min_d);
   Eigen::Vector3d far_pt(tan(_vFOV/2), tan(_hFOV/2), _max_d);
   pt_.push_back(near_pt);
   pt_.push_back(near_pt + far_pt);
 
-  near_pt = Eigen::Vector3d(-size_x / 2., size_y / 2., _min_d);
+  near_pt = Eigen::Vector3d(-_base_length / 2., _base_width / 2., _min_d);
   far_pt = Eigen::Vector3d(-tan(_vFOV/2), tan(_hFOV/2), _max_d);
   pt_.push_back(near_pt);
   pt_.push_back(near_pt + far_pt);
 
-  near_pt = Eigen::Vector3d(-size_x / 2., -size_y / 2., _min_d);
+  near_pt = Eigen::Vector3d(-_base_length / 2., -_base_width / 2., _min_d);
   far_pt = Eigen::Vector3d(-tan(_vFOV/2), -tan(_hFOV/2), _max_d);
   pt_.push_back(near_pt);
   pt_.push_back(near_pt + far_pt);
 
-  near_pt = Eigen::Vector3d(size_x / 2., -size_y / 2., _min_d);
+  near_pt = Eigen::Vector3d(_base_length / 2., -_base_width / 2., _min_d);
   far_pt = Eigen::Vector3d(tan(_vFOV/2), -tan(_hFOV/2), _max_d);
   pt_.push_back(near_pt);
   pt_.push_back(near_pt + far_pt);
