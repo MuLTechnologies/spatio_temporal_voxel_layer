@@ -139,7 +139,7 @@ public:
     const std::shared_ptr<rmw_request_id_t>/*header*/,
     std::shared_ptr<spatio_temporal_voxel_layer::srv::SaveGrid::Request> req,
     std::shared_ptr<spatio_temporal_voxel_layer::srv::SaveGrid::Response> resp);
-
+  
   // Clearing grid around a pose
   void ClearGridAroundPoseCallback(
     const std::shared_ptr<rmw_request_id_t>/*header*/,
@@ -155,6 +155,7 @@ public:
     const std::shared_ptr<rmw_request_id_t>/*header*/, 
     std::shared_ptr<std_srvs::srv::Trigger::Request>, 
     std::shared_ptr<std_srvs::srv::Trigger::Response> resp);
+
   void ClearEntireGridCallback(
     const std::shared_ptr<rmw_request_id_t>/*header*/, 
     std::shared_ptr<std_srvs::srv::Trigger::Request>, 
@@ -200,7 +201,7 @@ private:
    */
   rcl_interfaces::msg::SetParametersResult
     dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
-
+  
   // Internal method for clearing the layer around a pose
   void clearCostmapLayerAroundPose(
     double pose_x, double pose_y, double reset_distance);

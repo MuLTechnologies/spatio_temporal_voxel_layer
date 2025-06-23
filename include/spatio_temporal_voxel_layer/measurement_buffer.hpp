@@ -102,6 +102,7 @@ public:
     const double & vFOVPadding,
     const double & hFOV,
     const double & decay_acceleration,
+    const bool & disable_decay_inside_frustum,
     const bool & marking,
     const bool & clearing,
     const double & voxel_size,
@@ -136,6 +137,7 @@ public:
   void SetVerticalFovPadding(const double & vertical_fov_padding);
   void SetHorizontalFovAngle(const double & horizontal_fov_angle);
   void SetVerticalFovAngle(const double & vertical_fov_angle);
+  void SetFrustumPersistent(const bool & disable_decay_inside_frustum);
 
   // State knoweldge if sensors are operating as expected
   bool UpdatedAtExpectedRate(void) const;
@@ -160,7 +162,7 @@ private:
   double _min_obstacle_height, _max_obstacle_height, _obstacle_range, _tf_tolerance;
   double _min_z, _max_z, _vertical_fov, _vertical_fov_padding, _horizontal_fov;
   double _decay_acceleration, _voxel_size;
-  bool _marking, _clearing;
+  bool _disable_decay_inside_frustum, _marking, _clearing;
   Filters _filter;
   int _voxel_min_points;
   bool _clear_buffer_after_reading, _enabled;

@@ -52,7 +52,7 @@ DepthCameraFrustum::DepthCameraFrustum(
   #if VISUALIZE_FRUSTUM
   _node = std::make_shared<rclcpp::Node>("frustum_publisher");
   _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
-  rclcpp::sleep_for(std::chrono::milliseconds(500));
+  rclcpp::sleep_for(std::chrono::milliseconds(100));
   #endif
   this->ComputePlaneNormals();
 }
@@ -180,42 +180,41 @@ void DepthCameraFrustum::TransformModel(void)
   #if VISUALIZE_FRUSTUM
   visualization_msgs::msg::MarkerArray msg_list;
   visualization_msgs::msg::Marker msg;
-  for (uint i = 0; i != _frustum_pts.size(); i++) {
-    // frustum pts
-    msg.header.frame_id = std::string("map");   // Use global_frame of costmap
-    msg.type = visualization_msgs::msg::Marker::SPHERE;
-    msg.action = visualization_msgs::msg::Marker::ADD;
-    msg.scale.x = 0.15;
-    msg.scale.y = 0.15;
-    msg.scale.z = 0.15;
-    msg.pose.orientation.w = 1.0;
-    msg.header.stamp = _node->now();
-    msg.ns = "pt_" + std::to_string(i);
-    msg.color.g = 1.0f;
-    msg.color.a = 1.0;
-    Eigen::Vector3d T_pt = T * _frustum_pts.at(i);
-    geometry_msgs::msg::Pose pnt;
-    pnt.position.x = T_pt[0];
-    pnt.position.y = T_pt[1];
-    pnt.position.z = T_pt[2];
-    pnt.orientation.w = 1;
-    msg.pose = pnt;
-    msg_list.markers.push_back(msg);
+  // Visualize frustum points - disabled as not useful and reducing visibility
+  // for (uint i = 0; i != _frustum_pts.size(); i++) {
+  //   // frustum pts
+  //   msg.header.frame_id = std::string("map");   // Use global_frame of costmap
+  //   msg.type = visualization_msgs::msg::Marker::SPHERE;
+  //   msg.action = visualization_msgs::msg::Marker::ADD;
+  //   msg.scale.x = 0.15;
+  //   msg.scale.y = 0.15;
+  //   msg.scale.z = 0.15;
+  //   msg.pose.orientation.w = 1.0;
+  //   msg.header.stamp = _node->now();
+  //   msg.ns = "pt_" + std::to_string(i);
+  //   msg.color.g = 1.0f;
+  //   msg.color.a = 1.0;
+  //   Eigen::Vector3d T_pt = T * _frustum_pts.at(i);
+  //   geometry_msgs::msg::Pose pnt;
+  //   pnt.position.x = T_pt[0];
+  //   pnt.position.y = T_pt[1];
+  //   pnt.position.z = T_pt[2];
+  //   pnt.orientation.w = 1;
+  //   msg.pose = pnt;
+  //   msg_list.markers.push_back(msg);
 
-    // point numbers
-    msg.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-    msg.ns = std::to_string(i);
-    msg.pose.position.z += 0.15;
-    msg.text = std::to_string(i);
-    msg_list.markers.push_back(msg);
-  }
+  //   // point numbers
+  //   msg.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+  //   msg.ns = std::to_string(i);
+  //   msg.pose.position.z += 0.15;
+  //   msg.text = std::to_string(i);
+  //   msg_list.markers.push_back(msg);
+  // }
 
   // frustum lines
-  msg.header.frame_id = std::string("map");   // Use global_frame of costmap
+  msg.header.frame_id = std::string("odom");   // Use global_frame of costmap
   msg.type = visualization_msgs::msg::Marker::LINE_STRIP;
-  msg.scale.x = 0.03;   /// ?
-  msg.scale.y = 0.03;   /// ?
-  msg.scale.z = 0.03;   /// ?
+  msg.scale.x = 0.02;   // line width
   msg.pose.orientation.w = 1.0;
   msg.pose.position.x = 0;
   msg.pose.position.y = 0;
@@ -255,33 +254,33 @@ void DepthCameraFrustum::TransformModel(void)
     }
     msg_list.markers.push_back(msg);
   }
+  // Visualize frustum normal vectors - disabled as not useful and reducing visibility
+  // for (uint i = 0; i != _plane_normals.size(); i++) {
+  //   // normal vectors
+  //   msg.pose.position.z -= 0.15;
+  //   msg.type = visualization_msgs::msg::Marker::ARROW;
+  //   msg.ns = "normal_" + std::to_string(i);
+  //   msg.scale.y = 0.07;
+  //   msg.scale.z = 0.07;
+  //   msg.scale.x = 1;
+  //   msg.color.g = 1.0f;
+  //   const VectorWithPt3D nml = _plane_normals.at(i);
+  //   msg.pose.position.x = nml.initial_point[0];
+  //   msg.pose.position.y = nml.initial_point[1];
+  //   msg.pose.position.z = nml.initial_point[2];
 
-  for (uint i = 0; i != _plane_normals.size(); i++) {
-    // normal vectors
-    msg.pose.position.z -= 0.15;
-    msg.type = visualization_msgs::msg::Marker::ARROW;
-    msg.ns = "normal_" + std::to_string(i);
-    msg.scale.y = 0.07;
-    msg.scale.z = 0.07;
-    msg.scale.x = 1;
-    msg.color.g = 1.0f;
-    const VectorWithPt3D nml = _plane_normals.at(i);
-    msg.pose.position.x = nml.initial_point[0];
-    msg.pose.position.y = nml.initial_point[1];
-    msg.pose.position.z = nml.initial_point[2];
+  //   // turn unit vector into a quaternion
+  //   const Eigen::Quaterniond quat =
+  //     Eigen::Quaterniond::FromTwoVectors(
+  //     Eigen::Vector3d::UnitX(),
+  //     Eigen::Vector3d(nml.x, nml.y, nml.z) );
+  //   msg.pose.orientation.x = quat.x();
+  //   msg.pose.orientation.y = quat.y();
+  //   msg.pose.orientation.z = quat.z();
+  //   msg.pose.orientation.w = quat.w();
 
-    // turn unit vector into a quaternion
-    const Eigen::Quaterniond quat =
-      Eigen::Quaterniond::FromTwoVectors(
-      Eigen::Vector3d::UnitX(), \
-      Eigen::Vector3d(nml.x, nml.y, nml.z) );
-    msg.pose.orientation.x = quat.x();
-    msg.pose.orientation.y = quat.y();
-    msg.pose.orientation.z = quat.z();
-    msg.pose.orientation.w = quat.w();
-
-    msg_list.markers.push_back(msg);
-  }
+  //   msg_list.markers.push_back(msg);
+  // }
   _frustum_pub->publish(msg_list);
   #endif
 }

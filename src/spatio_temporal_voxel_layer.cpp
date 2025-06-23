@@ -207,7 +207,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     double min_z, max_z, vFOV, vFOVPadding;
     double hFOV, decay_acceleration, obstacle_range;
     std::string topic, sensor_frame, data_type, filter_str;
-    bool inf_is_valid = false, clearing, marking;
+    bool inf_is_valid = false, disable_decay_inside_frustum, clearing, marking;
     bool clear_after_reading, enabled;
     int voxel_min_points;
     buffer::Filters filter;
@@ -232,6 +232,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     declareParameter(source + "." + "vertical_fov_padding", rclcpp::ParameterValue(0.0));
     declareParameter(source + "." + "horizontal_fov_angle", rclcpp::ParameterValue(1.04));
     declareParameter(source + "." + "decay_acceleration", rclcpp::ParameterValue(0.0));
+    declareParameter(source + "." + "disable_decay_inside_frustum", rclcpp::ParameterValue(false));
     declareParameter(source + "." + "filter", rclcpp::ParameterValue(std::string("passthrough")));
     declareParameter(source + "." + "voxel_min_points", rclcpp::ParameterValue(0));
     declareParameter(source + "." + "clear_after_reading", rclcpp::ParameterValue(false));
@@ -266,6 +267,8 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     node->get_parameter(name_ + "." + source + "." + "horizontal_fov_angle", hFOV);
     // acceleration scales the model's decay in presence of readings
     node->get_parameter(name_ + "." + source + "." + "decay_acceleration", decay_acceleration);
+    // makes the voxels within frustum stay persistent (not decay)
+    node->get_parameter(name_ + "." + source + "." + "disable_decay_inside_frustum", disable_decay_inside_frustum);
     // performs an approximate voxel filter over the data to reduce
     node->get_parameter(name_ + "." + source + "." + "filter", filter_str);
     // minimum points per voxel for voxel filter
@@ -303,7 +306,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
           observation_keep_time, expected_update_rate, min_obstacle_height,
           max_obstacle_height, obstacle_range, *tf_, _global_frame, sensor_frame,
           transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV,
-          decay_acceleration, marking, clearing, _voxel_size,
+          decay_acceleration, disable_decay_inside_frustum, marking, clearing, _voxel_size,
           filter, voxel_min_points, enabled, clear_after_reading, model_type,
           node->get_clock(), node->get_logger())));
 
@@ -1126,6 +1129,15 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
     }
 
     if (type == ParameterType::PARAMETER_BOOL) {
+      if (name == name_ + "." + "disable_decay_inside_frustum") {
+          for (auto & buffer : _observation_buffers) {
+            if (buffer->GetSourceName() == source) {
+              buffer->Lock();
+              buffer->SetFrustumPersistent(parameter.as_bool());
+              buffer->Unlock();
+            }
+          }
+      }
       if (name == name_ + "." + "enabled") {
         bool enable = parameter.as_bool();
         if (enabled_ != enable) {

@@ -70,8 +70,8 @@ struct MeasurementReading
   MeasurementReading(
     geometry_msgs::msg::Point & origin, sensor_msgs::msg::PointCloud2 cloud,
     double obstacle_range, double min_z, double max_z, double vFOV,
-    double vFOVPadding, double hFOV, double decay_acceleration, bool marking,
-    bool clearing, ModelType model_type)
+    double vFOVPadding, double hFOV, double decay_acceleration, bool disable_decay_inside_frustum,
+    bool marking, bool clearing, ModelType model_type)
   /*****************************************************************************/
     : _origin(origin),
     _cloud(std::make_shared < sensor_msgs::msg::PointCloud2 > (cloud)),
@@ -83,6 +83,7 @@ struct MeasurementReading
     _horizontal_fov_in_rad(hFOV),
     _marking(marking),
     _clearing(clearing),
+    _disable_decay_inside_frustum(disable_decay_inside_frustum),
     _decay_acceleration(decay_acceleration),
     _model_type(model_type)
   {
@@ -110,6 +111,7 @@ struct MeasurementReading
     _horizontal_fov_in_rad(obs._horizontal_fov_in_rad),
     _marking(obs._marking),
     _clearing(obs._clearing),
+    _disable_decay_inside_frustum(obs._disable_decay_inside_frustum),
     _decay_acceleration(obs._decay_acceleration),
     _model_type(obs._model_type)
   {
@@ -120,7 +122,7 @@ struct MeasurementReading
   std::shared_ptr < sensor_msgs::msg::PointCloud2 > _cloud;
   double _obstacle_range_in_m, _min_z_in_m, _max_z_in_m;
   double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad;
-  double _marking, _clearing, _decay_acceleration;
+  double _marking, _clearing, _disable_decay_inside_frustum, _decay_acceleration;
   ModelType _model_type;
 };
 
