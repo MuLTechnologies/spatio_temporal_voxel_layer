@@ -70,6 +70,8 @@
 #include "nav2_msgs/srv/clear_grid_around_pose.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_srvs/srv/trigger.hpp"
+#include "std_msgs/msg/bool.hpp"
+
 // projector
 #include "laser_geometry/laser_geometry.hpp"
 // tf
@@ -78,9 +80,6 @@
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2/buffer_core.h"
-
-// robo_cart
-#include <robo_cart_msgs/msg/destination_status.hpp>
 
 
 namespace spatio_temporal_voxel_layer
@@ -174,11 +173,11 @@ private:
     const std::shared_ptr<buffer::MeasurementBuffer> & buffer);
 
   /**
-   * @brief Receive the DestinationStatusMsg and save if the cart is in manual mode
+   * @brief Receive the std_msgs::msg::Bool and save if the cart is in manual mode
    * 
    * @param msg 
    */
-  void destinationStatusCb(const robo_cart_msgs::msg::DestinationStatus::UniquePtr& msg);
+  void isInManualModeCb(const std_msgs::msg::Bool::UniquePtr& msg);
 
   // Functions for adding static obstacle zones
   bool AddStaticObservations(const observation::MeasurementReading & obs);
@@ -221,7 +220,7 @@ private:
   std::vector<rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr> _buffer_enabler_servers;
 
   /// @brief Destination status sub
-  rclcpp::Subscription<robo_cart_msgs::msg::DestinationStatus>::SharedPtr destination_status_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr is_in_manual_mode_sub_;
   /// @brief Is cart in manual mode
   bool is_in_manual_mode_ = true;
   

@@ -14,7 +14,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 find_package(ament_cmake REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_msgs REQUIRED)
-find_package(robo_cart_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -59,7 +58,6 @@ endif()
 set(dependencies
   nav2_costmap_2d
   nav2_msgs
-  robo_cart_msgs
   geometry_msgs
   pluginlib
   sensor_msgs

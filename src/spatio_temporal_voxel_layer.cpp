@@ -656,9 +656,9 @@ void SpatioTemporalVoxelLayer::activate(void)
   auto node = node_.lock();
 
   if (_clear_grid_under_footprint_in_manual_mode) {
-    destination_status_sub_ = node->create_subscription<robo_cart_msgs::msg::DestinationStatus>(
-      "/robo_cart/autonomy_status", rclcpp::SystemDefaultsQoS(),
-      std::bind(&SpatioTemporalVoxelLayer::destinationStatusCb, this, _1));
+    is_in_manual_mode_sub_ = node->create_subscription<std_msgs::msg::Bool>(
+      "/robo_cart/is_in_manual_mode", rclcpp::SystemDefaultsQoS(),
+      std::bind(&SpatioTemporalVoxelLayer::isInManualModeCb, this, _1));
   }
 
   // Add callback for dynamic parametrs
@@ -1242,14 +1242,9 @@ void SpatioTemporalVoxelLayer::clearVoxelGridInsidePolygon(
   _voxel_grid->ResetGridArea(polygon_occupancy_cell, true);
 }
 
-void SpatioTemporalVoxelLayer::destinationStatusCb(const robo_cart_msgs::msg::DestinationStatus::UniquePtr& msg)
+void SpatioTemporalVoxelLayer::isInManualModeCb(const std_msgs::msg::Bool::UniquePtr& msg)
 {
-  if (
-    msg->data == robo_cart_msgs::msg::DestinationStatus::DRIVING || msg->data == robo_cart_msgs::msg::DestinationStatus::CALCULATING) {
-    is_in_manual_mode_ = false;
-  } else {
-    is_in_manual_mode_ = true;
-  }
+  is_in_manual_mode_ = msg->data;
 }
 
 void SpatioTemporalVoxelLayer::clearSquareRegion(double robot_x, double robot_y, double clear_range)
