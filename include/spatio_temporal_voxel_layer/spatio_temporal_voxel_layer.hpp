@@ -70,6 +70,8 @@
 #include "nav2_msgs/srv/clear_grid_around_pose.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_srvs/srv/trigger.hpp"
+#include "std_msgs/msg/bool.hpp"
+
 // projector
 #include "laser_geometry/laser_geometry.hpp"
 // tf
@@ -78,6 +80,7 @@
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2/buffer_core.h"
+
 
 namespace spatio_temporal_voxel_layer
 {
@@ -169,6 +172,13 @@ private:
     sensor_msgs::msg::PointCloud2::ConstSharedPtr message,
     const std::shared_ptr<buffer::MeasurementBuffer> & buffer);
 
+  /**
+   * @brief Receive the std_msgs::msg::Bool and save if the cart is in manual mode
+   * 
+   * @param msg 
+   */
+  void isInManualModeCb(const std_msgs::msg::Bool::UniquePtr& msg);
+
   // Functions for adding static obstacle zones
   bool AddStaticObservations(const observation::MeasurementReading & obs);
   bool RemoveStaticObservations(void);
@@ -195,6 +205,11 @@ private:
   void clearCostmapLayerAroundPose(
     double pose_x, double pose_y, double reset_distance);
 
+  void clearVoxelGridInsidePolygon(
+    const std::vector<geometry_msgs::msg::Point> &polygon);
+
+  void clearSquareRegion(double robot_x, double robot_y, double clear_range);
+
   laser_geometry::LaserProjection _laser_projector;
   std::vector<std::shared_ptr<message_filters::SubscriberBase<rclcpp_lifecycle::LifecycleNode>>>
     _observation_subscribers;
@@ -204,6 +219,11 @@ private:
   std::vector<std::shared_ptr<buffer::MeasurementBuffer>> _clearing_buffers;
   std::vector<rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr> _buffer_enabler_servers;
 
+  /// @brief Destination status sub
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr is_in_manual_mode_sub_;
+  /// @brief Is cart in manual mode
+  bool is_in_manual_mode_ = true;
+  
   bool _publish_voxels, _mapping_mode, was_reset_, _autosaving_enabled, _should_load_navigation_data;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _voxel_pub;
   rclcpp::Service<spatio_temporal_voxel_layer::srv::SaveGrid>::SharedPtr _grid_saver;
@@ -218,7 +238,9 @@ private:
   double _voxel_size, _voxel_decay;
   int _combination_method, _mark_threshold;
   volume_grid::GlobalDecayModel _decay_model;
-  bool _update_footprint_enabled, _enabled;
+  bool _clear_costmap_under_footprint, _enabled;
+  bool _clear_grid_under_footprint_in_manual_mode;
+  double _auto_grid_clear_range;
   std::vector<geometry_msgs::msg::Point> _transformed_footprint;
   std::vector<observation::MeasurementReading> _static_observations;
   std::unique_ptr<volume_grid::SpatioTemporalVoxelGrid> _voxel_grid;

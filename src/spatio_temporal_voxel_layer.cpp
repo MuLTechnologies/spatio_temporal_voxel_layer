@@ -107,8 +107,17 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   declareParameter("mark_threshold", rclcpp::ParameterValue(0));
   node->get_parameter(name_ + ".mark_threshold", _mark_threshold);
   // clear under robot footprint
-  declareParameter("update_footprint_enabled", rclcpp::ParameterValue(true));
-  node->get_parameter(name_ + ".update_footprint_enabled", _update_footprint_enabled);
+  declareParameter("clear_costmap_under_footprint", rclcpp::ParameterValue(true));
+  node->get_parameter(name_ + ".clear_costmap_under_footprint", _clear_costmap_under_footprint);
+
+  // clear grid under robot footprint
+  declareParameter("clear_grid_under_footprint_in_manual_mode", rclcpp::ParameterValue(true));
+  node->get_parameter(name_ + ".clear_grid_under_footprint_in_manual_mode", _clear_grid_under_footprint_in_manual_mode);
+
+  // clear under robot footprint
+  declareParameter("auto_grid_clear_range",  rclcpp::ParameterValue(0.0));
+  node->get_parameter(name_ + ".auto_grid_clear_range", _auto_grid_clear_range);
+
   // keep tabs on unknown space
   declareParameter(
     "track_unknown_space",
@@ -615,10 +624,6 @@ bool SpatioTemporalVoxelLayer::updateFootprint(
   double * min_y, double * max_x, double * max_y)
 /*****************************************************************************/
 {
-  // updates layer costmap to include footprint for clearing in voxel grid
-  if (!_update_footprint_enabled) {
-    return false;
-  }
   nav2_costmap_2d::transformFootprint(
     robot_x, robot_y, robot_yaw,
     getFootprint(), _transformed_footprint);
@@ -647,9 +652,16 @@ void SpatioTemporalVoxelLayer::activate(void)
   for (; buf_it != _observation_buffers.end(); ++buf_it) {
     (*buf_it)->ResetLastUpdatedTime();
   }
+  
+  auto node = node_.lock();
+
+  if (_clear_grid_under_footprint_in_manual_mode) {
+    is_in_manual_mode_sub_ = node->create_subscription<std_msgs::msg::Bool>(
+      "/robo_cart/is_in_manual_mode", rclcpp::SystemDefaultsQoS(),
+      std::bind(&SpatioTemporalVoxelLayer::isInManualModeCb, this, _1));
+  }
 
   // Add callback for dynamic parametrs
-  auto node = node_.lock();
   dyn_params_handler = node->add_on_set_parameters_callback(
     std::bind(&SpatioTemporalVoxelLayer::dynamicParametersCallback, this, _1));
 }
@@ -688,6 +700,7 @@ void SpatioTemporalVoxelLayer::reset(void)
   // for (; it != _observation_buffers.end(); ++it) {
   //   (*it)->ResetLastUpdatedTime();
   // }
+  is_in_manual_mode_ = true;
 }
 
 /*****************************************************************************/
@@ -765,7 +778,7 @@ void SpatioTemporalVoxelLayer::updateCosts(
     current_ = true;
   }
 
-  if (_update_footprint_enabled) {
+  if (_clear_costmap_under_footprint) {
     setConvexPolygonCost(_transformed_footprint, nav2_costmap_2d::FREE_SPACE);
   }
 
@@ -869,6 +882,8 @@ void SpatioTemporalVoxelLayer::updateBounds(
   // mark observations
   _voxel_grid->Mark(marking_observations);
 
+
+
   // update the ROS Layered Costmap
   UpdateROSCostmap(min_x, min_y, max_x, max_y, cleared_cells);
 
@@ -881,9 +896,17 @@ void SpatioTemporalVoxelLayer::updateBounds(
     pc2->header.stamp = node->now();
     _voxel_pub->publish(*pc2);
   }
-
+  
   // update footprint
   updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+
+  if (is_in_manual_mode_ && _clear_grid_under_footprint_in_manual_mode) {
+    clearVoxelGridInsidePolygon(_transformed_footprint);
+  }
+
+  if (_auto_grid_clear_range > 0) {
+    clearSquareRegion(robot_x, robot_y, _auto_grid_clear_range);
+  }
 }
 
 /*****************************************************************************/
@@ -1199,6 +1222,46 @@ void SpatioTemporalVoxelLayer::clearCostmapLayerAroundPose(
   double ox = this->getOriginX(), oy = this->getOriginY();
   double width = this->getSizeInMetersX(), height = this->getSizeInMetersY();
   this->addExtraBounds(ox, oy, ox + width, oy + height);
+}
+
+void SpatioTemporalVoxelLayer::clearVoxelGridInsidePolygon(
+  const std::vector<geometry_msgs::msg::Point> &polygon)
+{
+  if (polygon.empty()) {
+      return;
+  }
+
+  std::vector<volume_grid::occupany_cell> polygon_occupancy_cell;
+  for (const auto& point : polygon) {
+    volume_grid::occupany_cell p{point.x, point.y};
+    polygon_occupancy_cell.push_back(p);
+  }
+  
+  // Reset the grid area defined by start and end occupancy cells
+  // Using invert_area = true to clear the area strictly inside the defined bounding box
+  _voxel_grid->ResetGridArea(polygon_occupancy_cell, true);
+}
+
+void SpatioTemporalVoxelLayer::isInManualModeCb(const std_msgs::msg::Bool::UniquePtr& msg)
+{
+  is_in_manual_mode_ = msg->data;
+}
+
+void SpatioTemporalVoxelLayer::clearSquareRegion(double robot_x, double robot_y, double clear_range)
+{
+    // Define the min and max bounds of the square region to clear
+    double min_x = robot_x - clear_range;
+    double max_x = robot_x + clear_range;
+    double min_y = robot_y - clear_range;
+    double max_y = robot_y + clear_range;
+
+    // Create occupancy cells for the bounding box corners
+    volume_grid::occupany_cell start{min_x, min_y};
+    volume_grid::occupany_cell end{max_x, max_y};
+
+    // Reset the grid area defined by start and end occupancy cells
+    // Using invert_area = false, as we want to clear everything outside the square
+    _voxel_grid->ResetGridArea(start, end, false);
 }
 
 }  // namespace spatio_temporal_voxel_layer

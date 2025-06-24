@@ -467,6 +467,41 @@ void SpatioTemporalVoxelGrid::ResetGridArea(
 }
 
 /*****************************************************************************/
+void SpatioTemporalVoxelGrid::ResetGridArea(
+    const std::vector<occupany_cell>& polygon, bool invert_area)
+/*****************************************************************************/
+{
+    boost::unique_lock<boost::mutex> lock(_grid_lock);
+
+    openvdb::DoubleGrid::ValueOnCIter cit_grid = _grid->cbeginValueOn();
+    for (; cit_grid.test(); ++cit_grid)
+    {
+        const openvdb::Coord pt_index(cit_grid.getCoord());
+        const openvdb::Vec3d pose_world = this->IndexToWorld(pt_index);
+
+        // Check if the current grid point is inside the polygon
+        bool in_range = pointInPolygon(occupany_cell(pose_world.x(), pose_world.y()), polygon);
+        
+        if (in_range == invert_area)
+        {
+            ClearGridPoint(pt_index);
+        }
+    }
+}
+
+bool SpatioTemporalVoxelGrid::pointInPolygon(const occupany_cell& point, const std::vector<occupany_cell>& polygon) {
+    int num_vertices = polygon.size();
+    bool inside = false;
+    for (int i = 0, j = num_vertices - 1; i < num_vertices; j = i++) {
+        if ((polygon[i].y > point.y) != (polygon[j].y > point.y) &&
+            (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x))
+            inside = !inside;
+    }
+    return inside;
+}
+
+
+/*****************************************************************************/
 bool SpatioTemporalVoxelGrid::MarkGridPoint(
   const openvdb::Coord & pt, const double & value) const
 /*****************************************************************************/

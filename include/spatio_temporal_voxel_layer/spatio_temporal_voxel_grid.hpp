@@ -151,6 +151,8 @@ public:
   // Clear the grid
   bool ResetGrid(void);
   void ResetGridArea(const occupany_cell & start, const occupany_cell & end, bool invert_area=false);
+  void ResetGridArea(const std::vector<occupany_cell>& polygon, bool invert_area);
+  bool pointInPolygon(const occupany_cell& point, const std::vector<occupany_cell>& polygon);
 
   // Save the file to file with size information
   bool SaveGrid(const std::string & file_name, double & map_size_bytes);
