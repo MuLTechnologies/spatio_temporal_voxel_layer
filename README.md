@@ -113,7 +113,7 @@ rgbd_obstacle_layer:
   observation_persistence: 0.0  #seconds
   max_obstacle_height:   2.0    #meters
   mark_threshold:        0      #voxel height
-  clear_layer_under_footprint: false               # Clear costmap under footprint
+  clear_costmap_under_footprint: false               # Clear costmap under footprint
   clear_grid_under_footprint_in_manual_mode: true  # Clear voxel grid footprint but only in manual mode
   auto_grid_clear_range: 0.0                       # Auto clear the grid if the range is exceeded
   combination_method:    1      #1=max, 0=override

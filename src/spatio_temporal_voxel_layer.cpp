@@ -107,8 +107,8 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   declareParameter("mark_threshold", rclcpp::ParameterValue(0));
   node->get_parameter(name_ + ".mark_threshold", _mark_threshold);
   // clear under robot footprint
-  declareParameter("clear_layer_under_footprint", rclcpp::ParameterValue(true));
-  node->get_parameter(name_ + ".clear_layer_under_footprint", _clear_layer_under_footprint);
+  declareParameter("clear_costmap_under_footprint", rclcpp::ParameterValue(true));
+  node->get_parameter(name_ + ".clear_costmap_under_footprint", _clear_costmap_under_footprint);
 
   // clear grid under robot footprint
   declareParameter("clear_grid_under_footprint_in_manual_mode", rclcpp::ParameterValue(true));
@@ -778,7 +778,7 @@ void SpatioTemporalVoxelLayer::updateCosts(
     current_ = true;
   }
 
-  if (_clear_layer_under_footprint) {
+  if (_clear_costmap_under_footprint) {
     setConvexPolygonCost(_transformed_footprint, nav2_costmap_2d::FREE_SPACE);
   }
 

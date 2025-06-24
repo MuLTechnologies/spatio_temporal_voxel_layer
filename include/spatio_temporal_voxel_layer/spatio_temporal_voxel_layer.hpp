@@ -239,7 +239,7 @@ private:
   double _voxel_size, _voxel_decay;
   int _combination_method, _mark_threshold;
   volume_grid::GlobalDecayModel _decay_model;
-  bool _clear_layer_under_footprint, _enabled;
+  bool _clear_costmap_under_footprint, _enabled;
   bool _clear_grid_under_footprint_in_manual_mode;
   double _auto_grid_clear_range;
   std::vector<geometry_msgs::msg::Point> _transformed_footprint;
