@@ -36,20 +36,24 @@
  *********************************************************************/
 
 #include <vector>
-#include "spatio_temporal_voxel_layer/frustum_models/depth_camera_frustum.hpp"
+#include "spatio_temporal_voxel_layer/frustum_models/proximity_shield_frustum.hpp"
 
 namespace geometry
 {
 
 /*****************************************************************************/
-DepthCameraFrustum::DepthCameraFrustum(
-  const double & vFOV, const double & hFOV, const double & min_dist,
-  const double & max_dist)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist)
+ProximityShieldFrustum::ProximityShieldFrustum(
+  const double & base_length, const double & base_width,
+  const double & vFOV, const double & hFOV,
+  const double & min_dist, const double & max_dist)
+: 
+  _base_length(base_length), _base_width(base_width),
+  _vFOV(vFOV), _hFOV(hFOV),
+  _min_d(min_dist), _max_d(max_dist)
 /*****************************************************************************/
 {
   _valid_frustum = false;
-  #if VISUALIZE_FRUSTUM
+  #if VISUALIZE_FRUSTUM_PROXIMITY_SHIELD
   _node = std::make_shared<rclcpp::Node>("frustum_publisher");
   _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
   rclcpp::sleep_for(std::chrono::milliseconds(100));
@@ -58,13 +62,13 @@ DepthCameraFrustum::DepthCameraFrustum(
 }
 
 /*****************************************************************************/
-DepthCameraFrustum::~DepthCameraFrustum(void)
+ProximityShieldFrustum::~ProximityShieldFrustum(void)
 /*****************************************************************************/
 {
 }
 
 /*****************************************************************************/
-void DepthCameraFrustum::ComputePlaneNormals(void)
+void ProximityShieldFrustum::ComputePlaneNormals(void)
 /*****************************************************************************/
 {
   // give ability to construct with bogus values
@@ -73,41 +77,29 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
     return;
   }
 
-  // Z vector and deflected vector capture
-  std::vector<Eigen::Vector3d> deflected_vecs;
-  deflected_vecs.reserve(4);
-  Eigen::Vector3d Z = Eigen::Vector3d::UnitZ();
-
-  // rotate going CCW
-  Eigen::Affine3d rx =
-    Eigen::Affine3d(Eigen::AngleAxisd(_vFOV / 2., Eigen::Vector3d::UnitX()));
-  Eigen::Affine3d ry =
-    Eigen::Affine3d(Eigen::AngleAxisd(_hFOV / 2., Eigen::Vector3d::UnitY()));
-  deflected_vecs.push_back(rx * ry * Z);
-
-  rx = Eigen::Affine3d(Eigen::AngleAxisd(-_vFOV / 2., Eigen::Vector3d::UnitX()));
-  deflected_vecs.push_back(rx * ry * Z);
-
-  ry = Eigen::Affine3d(Eigen::AngleAxisd(-_hFOV / 2., Eigen::Vector3d::UnitY()));
-  deflected_vecs.push_back(rx * ry * Z);
-
-  rx = Eigen::Affine3d(Eigen::AngleAxisd(_vFOV / 2., Eigen::Vector3d::UnitX()));
-  deflected_vecs.push_back(rx * ry * Z);
-
-  // get and store CCW 4 corners for each 2 planes at ends
+  // Create frustum vertices
   std::vector<Eigen::Vector3d> pt_;
-  pt_.reserve(2 * deflected_vecs.size());
-  std::vector<Eigen::Vector3d>::iterator it;
-  for (it = deflected_vecs.begin(); it != deflected_vecs.end(); ++it) {
-    // Here we calculate the min/max_d_on_vec in a way that the 2 planes at the end are actually 
-    // distant from the origin by the _min/max_d as we calculate the points based on the distance on the vector
-    auto min_d_on_vec = _min_d/it->z();
-    auto max_d_on_vec = _max_d/it->z();
-    pt_.push_back(*(it) * min_d_on_vec);
-    pt_.push_back(*(it) * max_d_on_vec);
-  }
+  pt_.reserve(8);
 
-  assert(pt_.size() == 8);
+  Eigen::Vector3d near_pt(_base_length / 2., _base_width / 2., _min_d);
+  Eigen::Vector3d far_pt(tan(_vFOV/2), tan(_hFOV/2), _max_d);
+  pt_.push_back(near_pt);
+  pt_.push_back(near_pt + far_pt);
+
+  near_pt = Eigen::Vector3d(-_base_length / 2., _base_width / 2., _min_d);
+  far_pt = Eigen::Vector3d(-tan(_vFOV/2), tan(_hFOV/2), _max_d);
+  pt_.push_back(near_pt);
+  pt_.push_back(near_pt + far_pt);
+
+  near_pt = Eigen::Vector3d(-_base_length / 2., -_base_width / 2., _min_d);
+  far_pt = Eigen::Vector3d(-tan(_vFOV/2), -tan(_hFOV/2), _max_d);
+  pt_.push_back(near_pt);
+  pt_.push_back(near_pt + far_pt);
+
+  near_pt = Eigen::Vector3d(_base_length / 2., -_base_width / 2., _min_d);
+  far_pt = Eigen::Vector3d(tan(_vFOV/2), -tan(_hFOV/2), _max_d);
+  pt_.push_back(near_pt);
+  pt_.push_back(near_pt + far_pt);
 
   // cross each plane and get normals
   const Eigen::Vector3d v_01(pt_[1][0] - pt_[0][0],
@@ -152,7 +144,7 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
     VectorWithPt3D(
       T_1[0], T_1[1], T_1[2], pt_[2]) * -1);
 
-  #if VISUALIZE_FRUSTUM
+  #if VISUALIZE_FRUSTUM_PROXIMITY_SHIELD
   _frustum_pts = pt_;
   #endif
 
@@ -161,7 +153,7 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
 }
 
 /*****************************************************************************/
-void DepthCameraFrustum::TransformModel(void)
+void ProximityShieldFrustum::TransformModel(void)
 /*****************************************************************************/
 {
   if (!_valid_frustum) {
@@ -177,7 +169,7 @@ void DepthCameraFrustum::TransformModel(void)
     it->TransformFrames(T);
   }
 
-  #if VISUALIZE_FRUSTUM
+  #if VISUALIZE_FRUSTUM_PROXIMITY_SHIELD
   visualization_msgs::msg::MarkerArray msg_list;
   visualization_msgs::msg::Marker msg;
   // Visualize frustum points - disabled as not useful and reducing visibility
@@ -286,7 +278,7 @@ void DepthCameraFrustum::TransformModel(void)
 }
 
 /*****************************************************************************/
-bool DepthCameraFrustum::IsInside(const openvdb::Vec3d & pt)
+bool ProximityShieldFrustum::IsInside(const openvdb::Vec3d & pt)
 /*****************************************************************************/
 {
   if (!_valid_frustum) {
@@ -307,14 +299,14 @@ bool DepthCameraFrustum::IsInside(const openvdb::Vec3d & pt)
 }
 
 /*****************************************************************************/
-void DepthCameraFrustum::SetPosition(const geometry_msgs::msg::Point & origin)
+void ProximityShieldFrustum::SetPosition(const geometry_msgs::msg::Point & origin)
 /*****************************************************************************/
 {
   _position = Eigen::Vector3d(origin.x, origin.y, origin.z);
 }
 
 /*****************************************************************************/
-void DepthCameraFrustum::SetOrientation(
+void ProximityShieldFrustum::SetOrientation(
   const geometry_msgs::msg::Quaternion & quat)
 /*****************************************************************************/
 {
@@ -322,7 +314,7 @@ void DepthCameraFrustum::SetOrientation(
 }
 
 /*****************************************************************************/
-double DepthCameraFrustum::Dot(
+double ProximityShieldFrustum::Dot(
   const VectorWithPt3D & plane_pt, const openvdb::Vec3d & query_pt) const
 /*****************************************************************************/
 {
@@ -332,7 +324,7 @@ double DepthCameraFrustum::Dot(
 }
 
 /*****************************************************************************/
-double DepthCameraFrustum::Dot(
+double ProximityShieldFrustum::Dot(
   const VectorWithPt3D & plane_pt, const Eigen::Vector3d & query_pt) const
 /*****************************************************************************/
 {
