@@ -192,3 +192,53 @@ To counter this I include a service to save the grid in the .vdb format for late
 ![openvdb2](https://user-images.githubusercontent.com/14944147/37010656-8ce4ff4c-20ba-11e8-9c35-1ce3e3039f77.png)
 
 **NOTE:** If used on Ubuntu 20.04 (`Foxy` or `Noetic`), you must set your `LD_PRELOAD` path to include `jemalloc` due to a known compiler flag issue in the 20.04 binaries of OpenVDB (e.x. `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`). If you see the error: `Could not load library LoadLibrary error: /usr/lib/x86_64-linux-gnu/libjemalloc.so.2: cannot allocate memory in static TLS block`, this is your issue.
+
+# Husarion Customizations
+
+## Proximity shield
+There is also a customized **model_type: 2** for creating a frustum of more flexible shape. That's similar to depth-camera frustum, but instead of propagating a pyramid from a single point, the base can be any rectangle defined by **base_length** and **base_width** parameters. The origin coordinates are taken from the input message frame. Other parameters can be used as for any other sensor. Using it along with **disable_decay_inside_frustum: true** parameter can create a reversed STVL behavior: any obstacles within the frustum remain persistent, while everything outside shall decay normally.
+
+Example costmap configuration for range sensors, that enable obstacles persist within their deadzones:
+
+```
+      proximity_layer:
+        plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
+        enabled:               true
+        voxel_decay:           0.     #seconds if linear, e^n if exponential
+        decay_model:           0      #0=linear, 1=exponential, -1=persistent
+        voxel_size:            0.01   #meters
+        track_unknown_space:   true   #default space is unknown
+        unknown_threshold: 15
+        observation_persistence: 0.0  #seconds
+        max_obstacle_height:   2.0    #meters
+        mark_threshold:        0      #voxel height
+        update_footprint_enabled: false #updates layer costmap to include footprint for clearing in voxel grid
+        combination_method:    0      #1=max, 0=override
+        origin_z:              0.0    #meters
+        publish_voxel_map:     true   #default off
+        transform_tolerance:   0.2    #seconds
+        mapping_mode:          false  #default off, saves map not for navigation
+        map_save_duration:     60.0   #default 60s, how often to autosave
+        observation_sources: proximity_point_cloud
+        proximity_point_cloud:
+          data_type: PointCloud2
+          topic: /robo_cart/proximity_sensor_pointcloud
+          marking: true
+          clearing: true
+          obstacle_range: 3.0
+          min_z: 0.0                          #additional offset for virtual sensor, usually not needed
+          max_z: 2.0                          #set to proximity_publisher's max_range*cos(range_fl_rpy[0])*cos(range_fl_rpy[1]) + min_z
+          base_length: $(env PROXIMITY_FRUSTUM_BASE_LENGTH) #longitudinal distance between proximity sensors
+          base_width: $(env PROXIMITY_FRUSTUM_BASE_WIDTH)   #lateral distance between proximity sensors
+          vertical_fov_angle: 2.38            #angle in longitudinal plane between proximity sensors
+          horizontal_fov_angle: 2.34          #angle in lateral plane between proximity sensors
+          min_obstacle_height: 0.0
+          max_obstacle_height: 2.0
+          expected_update_rate: 0.0           #default 0, if not updating at this rate at least, remove from buffer
+          observation_persistence: 0.0        #default 0, use all measurements taken during now-value, 0=latest
+          inf_is_valid: false                 #default false, for laser scans
+          clear_after_reading: true           #default false, clear the buffer after the layer gets readings from it
+          decay_acceleration: 0.              #accelerate voxels decay within frustum
+          disable_decay_inside_frustum: true  #make voxels within frustum persistent (don't decay regardless of acceleration setting)
+          model_type: 2                       #custom: 2 for virtual proximity shield
+```
