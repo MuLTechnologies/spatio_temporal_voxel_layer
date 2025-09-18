@@ -29,6 +29,8 @@ find_package(visualization_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(nav2_util REQUIRED)
+
 
 # Find OpenVDB . If not found on the system, will compile from source
 option(USE_SYSTEM_OPENVDB "Use system pre-installed OpenVDB" ON)
@@ -58,6 +60,7 @@ endif()
 set(dependencies
   nav2_costmap_2d
   nav2_msgs
+  nav2_util
   geometry_msgs
   pluginlib
   sensor_msgs

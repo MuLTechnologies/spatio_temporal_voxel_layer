@@ -145,6 +145,12 @@ public:
     std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Request> req,
     std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Response> resp);
 
+  // Clearing grid around the current robot pose
+  void ClearGridAroundRobotPoseCallback(
+    const std::shared_ptr<rmw_request_id_t>/*header*/,
+    std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Request> req,
+    std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Response> resp);
+
   // Map saving service callbacks
   void SaveStvlMapCallback(
     const std::shared_ptr<rmw_request_id_t>/*header*/, 
@@ -228,6 +234,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _voxel_pub;
   rclcpp::Service<spatio_temporal_voxel_layer::srv::SaveGrid>::SharedPtr _grid_saver;
   rclcpp::Service<nav2_msgs::srv::ClearGridAroundPose>::SharedPtr _clear_grid_around_pose_srv;
+  rclcpp::Service<nav2_msgs::srv::ClearGridAroundPose>::SharedPtr _clear_grid_around_robot_pose_srv;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _save_stvl_map_srv;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _erase_stvl_map_srv;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr _clear_entire_grid_srv;
