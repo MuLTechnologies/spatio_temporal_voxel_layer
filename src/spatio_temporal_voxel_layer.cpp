@@ -44,6 +44,7 @@
 #include <filesystem>
 
 #include "spatio_temporal_voxel_layer/spatio_temporal_voxel_layer.hpp"
+#include "nav2_util/robot_utils.hpp"
 
 namespace spatio_temporal_voxel_layer
 {
@@ -177,6 +178,11 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     &SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback, this, _1, _2, _3);
   _clear_grid_around_pose_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
     getName() + "/clear_grid_around_pose", clear_grid_around_pose_callback, rmw_qos_profile_services_default, callback_group_);
+
+  auto clear_grid_around_robot_pose_callback = std::bind(
+    &SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback, this, _1, _2, _3);
+  _clear_grid_around_robot_pose_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
+    getName() + "/clear_grid_around_robot_pose", clear_grid_around_robot_pose_callback, rmw_qos_profile_services_default, callback_group_);
 
   auto save_stvl_map_callback = std::bind(
     &SpatioTemporalVoxelLayer::SaveStvlMapCallback, this, _1, _2, _3);
@@ -950,6 +956,33 @@ void SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback(
   try
   {
     clearCostmapLayerAroundPose(req->pose.pose.position.x, req->pose.pose.position.y, req->reset_distance);
+    resp->status = true;
+    return;
+  }
+  catch(const std::exception& e)
+  {
+    RCLCPP_WARN_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
+  }
+  resp->status = false;
+}
+
+/*****************************************************************************/
+void SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback(
+  const std::shared_ptr<rmw_request_id_t>/*header*/,
+  std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Request> req,
+  std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Response> resp)
+/*****************************************************************************/
+{
+  boost::recursive_mutex::scoped_lock lock(_voxel_grid_lock);
+  try
+  {
+    geometry_msgs::msg::PoseStamped global_robot_pose;
+    if (!nav2_util::getCurrentPose(global_robot_pose, *tf_)) 
+    {
+      throw std::runtime_error("Failed to get robot pose");
+    }
+    // Get the current robot pose instead of the pose from service request
+    clearCostmapLayerAroundPose(global_robot_pose.pose.position.x,global_robot_pose.pose.position.y,req->reset_distance);
     resp->status = true;
     return;
   }
