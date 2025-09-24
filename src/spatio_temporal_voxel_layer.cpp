@@ -957,6 +957,9 @@ void SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback(
   {
     clearCostmapLayerAroundPose(req->pose.pose.position.x, req->pose.pose.position.y, req->reset_distance);
     resp->status = true;
+    RCLCPP_INFO_STREAM(
+      logger_,
+      "SpatioTemporalVoxelLayer: Cleared gride around pose, with reset distance: " << req->reset_distance);
     return;
   }
   catch(const std::exception& e)
@@ -984,6 +987,9 @@ void SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback(
     // Get the current robot pose instead of the pose from service request
     clearCostmapLayerAroundPose(global_robot_pose.pose.position.x,global_robot_pose.pose.position.y,req->reset_distance);
     resp->status = true;
+    RCLCPP_INFO_STREAM(
+      logger_,
+      "SpatioTemporalVoxelLayer: Cleared gride around robot pose, with reset distance: " << req->reset_distance);
     return;
   }
   catch(const std::exception& e)
@@ -1262,10 +1268,11 @@ void SpatioTemporalVoxelLayer::clearArea(
 void SpatioTemporalVoxelLayer::clearCostmapLayerAroundPose(
   double pose_x, double pose_y, double reset_distance)
 {
-  double start_point_x = pose_x - reset_distance / 2;
-  double start_point_y = pose_y - reset_distance / 2;
-  double end_point_x = start_point_x + reset_distance;
-  double end_point_y = start_point_y + reset_distance;
+  // Clear the layer by reset_distance in each direction
+  double start_point_x = pose_x - reset_distance;
+  double start_point_y = pose_y - reset_distance;
+  double end_point_x = pose_x + reset_distance;
+  double end_point_y = pose_y + reset_distance;  
 
   int start_x, start_y, end_x, end_y;
   this->worldToMapEnforceBounds(start_point_x, start_point_y, start_x, start_y);
