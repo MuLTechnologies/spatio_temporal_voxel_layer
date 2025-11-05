@@ -320,10 +320,12 @@ void SpatioTemporalVoxelGrid::Mark(
 }
 
 /*****************************************************************************/
+// This function marks occupied STV-Grid points from a provided observation source
 void SpatioTemporalVoxelGrid::operator()(
   const observation::MeasurementReading & obs) const
 /*****************************************************************************/
 {
+  // Use this observation source only if it was configured as marking
   if (obs._marking) {
     float mark_range_2 = obs._obstacle_range_in_m * obs._obstacle_range_in_m;
     const double cur_time = _clock->now().seconds();
@@ -333,17 +335,29 @@ void SpatioTemporalVoxelGrid::operator()(
     sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
     sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
 
+    float tan_half_hFOV = tan(obs._horizontal_fov_in_rad/2);
+    float tan_half_vFOV = tan(obs._vertical_fov_in_rad/2);
+
+    // Iterate over each point in the observation buffer
     for (; iter_x != iter_x.end();
       ++iter_x, ++iter_y, ++iter_z)
     {
-      float distance_2 =
-        (*iter_x - obs._origin.x) * (*iter_x - obs._origin.x) +
-        (*iter_y - obs._origin.y) * (*iter_y - obs._origin.y) +
-        (*iter_z - obs._origin.z) * (*iter_z - obs._origin.z);
+      float dx = abs(*iter_x - obs._origin.x);
+      float dy = abs(*iter_y - obs._origin.y);
+      float dz = abs(*iter_z - obs._origin.z);
+
+      // Filter the data outside of the configured obstacle range
+      float distance_2 = dx * dx + dy * dy + dz * dz;
       if (distance_2 > mark_range_2 || distance_2 < 0.0001) {
         continue;
       }
 
+      // Filter the data outside of the configured field-of-view angles
+      if (dy > tan_half_hFOV * dx || dz > tan_half_vFOV * dx) {  // X axis pointing forwards of the frustum
+        continue;
+      }
+
+      // Offset the negative values by voxel_size for correct rounding lat
       double x = *iter_x < 0 ? *iter_x - _voxel_size : *iter_x;
       double y = *iter_y < 0 ? *iter_y - _voxel_size : *iter_y;
       double z = *iter_y < 0 ? *iter_z - _voxel_size : *iter_z;
@@ -351,6 +365,7 @@ void SpatioTemporalVoxelGrid::operator()(
       openvdb::Vec3d mark_grid(this->WorldToIndex(
           openvdb::Vec3d(x, y, z)));
 
+      // Create a new occupied voxel
       if (!this->MarkGridPoint(
           openvdb::Coord(
             mark_grid[0], mark_grid[1],
