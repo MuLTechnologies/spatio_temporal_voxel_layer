@@ -351,7 +351,8 @@ void SpatioTemporalVoxelGrid::operator()(
       }
 
       // Filter the data outside of the configured field-of-view angles
-      if (dy > obs._tan_half_hFOV * dx || dz > obs._tan_half_vFOV * dx) {  // X axis pointing forwards of the frustum
+      if (dz > obs._tan_half_vFOV * dx - _voxel_size + obs._vertical_fov_padding_in_m
+        || dy > obs._tan_half_hFOV * dx + obs._vertical_fov_padding_in_m) {
         continue;
       }
 
