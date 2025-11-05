@@ -57,6 +57,7 @@ public:
   ProximityShieldFrustum(
     const double & base_length, const double & base_width,
     const double & vFOV, const double & hFOV,
+    const double & _tan_half_vFOV, const double & tan_half_hFOV,
     const double & min_dist, const double & max_dist);
   virtual ~ProximityShieldFrustum(void);
 
@@ -76,7 +77,7 @@ private:
   double Dot(const VectorWithPt3D &, const openvdb::Vec3d &) const;
   double Dot(const VectorWithPt3D &, const Eigen::Vector3d &) const;
 
-  double _base_length, _base_width, _vFOV, _hFOV, _min_d, _max_d;
+  double _base_length, _base_width, _vFOV, _hFOV, _tan_half_vFOV, _tan_half_hFOV, _min_d, _max_d;
   std::vector<VectorWithPt3D> _plane_normals;
   Eigen::Vector3d _position;
   Eigen::Quaterniond _orientation;

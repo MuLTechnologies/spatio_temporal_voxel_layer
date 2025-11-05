@@ -41,6 +41,7 @@
 #define SPATIO_TEMPORAL_VOXEL_LAYER__MEASUREMENT_READING_H_
 
 #include <memory>
+#include <cmath> // For tan() function
 
 // msgs
 #include "geometry_msgs/msg/point.hpp"
@@ -83,6 +84,7 @@ struct MeasurementReading
     _vertical_fov_in_rad(vFOV),
     _vertical_fov_padding_in_m(vFOVPadding),
     _horizontal_fov_in_rad(hFOV),
+    _tan_half_vFOV(tan(vFOV/2)), _tan_half_hFOV(tan(hFOV/2)), // precomputed tangens for better performance
     _base_length(base_length),
     _base_width(base_width),
     _marking(marking),
@@ -113,6 +115,8 @@ struct MeasurementReading
     _vertical_fov_in_rad(obs._vertical_fov_in_rad),
     _vertical_fov_padding_in_m(obs._vertical_fov_padding_in_m),
     _horizontal_fov_in_rad(obs._horizontal_fov_in_rad),
+    _tan_half_vFOV(obs._tan_half_vFOV),
+    _tan_half_hFOV(obs._tan_half_hFOV),
     _base_length(obs._base_length),
     _base_width(obs._base_width),
     _marking(obs._marking),
@@ -127,7 +131,7 @@ struct MeasurementReading
   geometry_msgs::msg::Quaternion _orientation;
   std::shared_ptr < sensor_msgs::msg::PointCloud2 > _cloud;
   double _obstacle_range_in_m, _min_z_in_m, _max_z_in_m;
-  double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad, _base_length, _base_width;
+  double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad, _tan_half_vFOV, _tan_half_hFOV, _base_length, _base_width;
   double _marking, _clearing, _disable_decay_inside_frustum, _decay_acceleration;
   ModelType _model_type;
 };

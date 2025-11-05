@@ -164,7 +164,7 @@ private:
   std::string _global_frame, _sensor_frame, _source_name, _topic_name;
   std::list<observation::MeasurementReading> _observation_list;
   double _min_obstacle_height, _max_obstacle_height, _obstacle_range, _tf_tolerance;
-  double _min_z, _max_z, _vertical_fov, _vertical_fov_padding, _horizontal_fov, _base_length, _base_width;
+  double _min_z, _max_z, _vertical_fov, _vertical_fov_padding, _horizontal_fov, _tan_half_vFOV, _tan_half_hFOV, _base_length, _base_width;
   double _decay_acceleration, _voxel_size;
   bool _disable_decay_inside_frustum, _marking, _clearing;
   Filters _filter;

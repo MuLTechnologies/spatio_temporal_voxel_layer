@@ -72,6 +72,7 @@ MeasurementBuffer::MeasurementBuffer(
   _max_obstacle_height(max_obstacle_height), _obstacle_range(obstacle_range),
   _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d),
   _vertical_fov(vFOV), _vertical_fov_padding(vFOVPadding), _horizontal_fov(hFOV),
+  _tan_half_vFOV(tan(vFOV/2)), _tan_half_hFOV(tan(hFOV/2)), // precomputed tangens for better performance
   _base_length(base_length), _base_width(base_width),
   _decay_acceleration(decay_acceleration), _voxel_size(voxel_size),
   _disable_decay_inside_frustum(disable_decay_inside_frustum), _marking(marking), _clearing(clearing),
@@ -126,9 +127,10 @@ void MeasurementBuffer::BufferROSCloud(
     _observation_list.front()._min_z_in_m = _min_z;
     _observation_list.front()._max_z_in_m = _max_z;
     _observation_list.front()._vertical_fov_in_rad = _vertical_fov;
-    _observation_list.front()._vertical_fov_padding_in_m =
-      _vertical_fov_padding;
+    _observation_list.front()._vertical_fov_padding_in_m = _vertical_fov_padding;
     _observation_list.front()._horizontal_fov_in_rad = _horizontal_fov;
+    _observation_list.front()._tan_half_vFOV = _tan_half_vFOV;
+    _observation_list.front()._tan_half_hFOV = _tan_half_hFOV;
     _observation_list.front()._base_length = _base_length;
     _observation_list.front()._base_width = _base_width;
     _observation_list.front()._decay_acceleration = _decay_acceleration;
@@ -320,6 +322,7 @@ void MeasurementBuffer::SetVerticalFovAngle(const double & vertical_fov_angle)
 /*****************************************************************************/
 {
   _vertical_fov = vertical_fov_angle;
+  _tan_half_vFOV = tan(vertical_fov_angle/2);
 }
 
 /*****************************************************************************/
@@ -334,6 +337,7 @@ void MeasurementBuffer::SetHorizontalFovAngle(const double & horizontal_fov_angl
 /*****************************************************************************/
 {
   _horizontal_fov = horizontal_fov_angle;
+  _tan_half_hFOV = tan(horizontal_fov_angle/2);
 }
 
 /*****************************************************************************/

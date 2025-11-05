@@ -45,17 +45,19 @@ namespace geometry
 ProximityShieldFrustum::ProximityShieldFrustum(
   const double & base_length, const double & base_width,
   const double & vFOV, const double & hFOV,
+  const double & tan_half_vFOV, const double & tan_half_hFOV,
   const double & min_dist, const double & max_dist)
 : 
   _base_length(base_length), _base_width(base_width),
   _vFOV(vFOV), _hFOV(hFOV),
+  _tan_half_vFOV(tan_half_vFOV), _tan_half_hFOV(tan_half_hFOV),
   _min_d(min_dist), _max_d(max_dist)
 /*****************************************************************************/
 {
   _valid_frustum = false;
   #if VISUALIZE_FRUSTUM_PROXIMITY_SHIELD
-  _node = std::make_shared<rclcpp::Node>("frustum_publisher");
-  _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
+  _node = std::make_shared<rclcpp::Node>("proximity_shield_frustum_publisher");
+  _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("proximity_shield_frustum", 10);
   rclcpp::sleep_for(std::chrono::milliseconds(100));
   #endif
   this->ComputePlaneNormals();
@@ -82,22 +84,22 @@ void ProximityShieldFrustum::ComputePlaneNormals(void)
   pt_.reserve(8);
 
   Eigen::Vector3d near_pt(_base_length / 2., _base_width / 2., _min_d);
-  Eigen::Vector3d far_pt(tan(_vFOV/2), tan(_hFOV/2), _max_d);
+  Eigen::Vector3d far_pt(_tan_half_vFOV, _tan_half_hFOV, _max_d);
   pt_.push_back(near_pt);
   pt_.push_back(near_pt + far_pt);
 
   near_pt = Eigen::Vector3d(-_base_length / 2., _base_width / 2., _min_d);
-  far_pt = Eigen::Vector3d(-tan(_vFOV/2), tan(_hFOV/2), _max_d);
+  far_pt = Eigen::Vector3d(-_tan_half_vFOV, _tan_half_hFOV, _max_d);
   pt_.push_back(near_pt);
   pt_.push_back(near_pt + far_pt);
 
   near_pt = Eigen::Vector3d(-_base_length / 2., -_base_width / 2., _min_d);
-  far_pt = Eigen::Vector3d(-tan(_vFOV/2), -tan(_hFOV/2), _max_d);
+  far_pt = Eigen::Vector3d(-_tan_half_vFOV, -_tan_half_hFOV, _max_d);
   pt_.push_back(near_pt);
   pt_.push_back(near_pt + far_pt);
 
   near_pt = Eigen::Vector3d(_base_length / 2., -_base_width / 2., _min_d);
-  far_pt = Eigen::Vector3d(tan(_vFOV/2), -tan(_hFOV/2), _max_d);
+  far_pt = Eigen::Vector3d(_tan_half_vFOV, -_tan_half_hFOV, _max_d);
   pt_.push_back(near_pt);
   pt_.push_back(near_pt + far_pt);
 

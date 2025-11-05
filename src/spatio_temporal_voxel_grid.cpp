@@ -174,8 +174,8 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
     geometry::Frustum * frustum;
     if (it->_model_type == DEPTH_CAMERA) {
       frustum = new geometry::DepthCameraFrustum(
-        it->_vertical_fov_in_rad,
-        it->_horizontal_fov_in_rad, it->_min_z_in_m, it->_max_z_in_m);
+        it->_vertical_fov_in_rad, it->_horizontal_fov_in_rad,
+        it->_min_z_in_m, it->_max_z_in_m);
     } else if (it->_model_type == THREE_DIMENSIONAL_LIDAR) {
       frustum = new geometry::ThreeDimensionalLidarFrustum(
         it->_vertical_fov_in_rad, it->_vertical_fov_padding_in_m,
@@ -184,6 +184,7 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
       frustum = new geometry::ProximityShieldFrustum(
         it->_base_length, it->_base_width,
         it->_vertical_fov_in_rad, it->_horizontal_fov_in_rad,
+        it->_tan_half_vFOV, it->_tan_half_hFOV,
         it->_min_z_in_m, it->_max_z_in_m);
     } else {
       // add else if statement for each implemented model
@@ -335,9 +336,6 @@ void SpatioTemporalVoxelGrid::operator()(
     sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
     sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
 
-    float tan_half_hFOV = tan(obs._horizontal_fov_in_rad/2);
-    float tan_half_vFOV = tan(obs._vertical_fov_in_rad/2);
-
     // Iterate over each point in the observation buffer
     for (; iter_x != iter_x.end();
       ++iter_x, ++iter_y, ++iter_z)
@@ -353,7 +351,7 @@ void SpatioTemporalVoxelGrid::operator()(
       }
 
       // Filter the data outside of the configured field-of-view angles
-      if (dy > tan_half_hFOV * dx || dz > tan_half_vFOV * dx) {  // X axis pointing forwards of the frustum
+      if (dy > obs._tan_half_hFOV * dx || dz > obs._tan_half_vFOV * dx) {  // X axis pointing forwards of the frustum
         continue;
       }
 
