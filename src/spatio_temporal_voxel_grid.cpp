@@ -303,10 +303,12 @@ void SpatioTemporalVoxelGrid::Mark(
 }
 
 /*****************************************************************************/
+// This function marks occupied STV-Grid points from a provided observation source
 void SpatioTemporalVoxelGrid::operator()(
   const observation::MeasurementReading & obs) const
 /*****************************************************************************/
 {
+  // Use this observation source only if it was configured as marking
   if (obs._marking) {
     float mark_range_2 = obs._obstacle_range_in_m * obs._obstacle_range_in_m;
     const double cur_time = _clock->now().seconds();
@@ -316,9 +318,10 @@ void SpatioTemporalVoxelGrid::operator()(
     sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
     sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
 
-    for (; iter_x != iter_x.end();
-      ++iter_x, ++iter_y, ++iter_z)
+    // Iterate over each point in the observation buffer
+    for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
     {
+      // Filter the data outside of the configured obstacle range
       float distance_2 =
         (*iter_x - obs._origin.x) * (*iter_x - obs._origin.x) +
         (*iter_y - obs._origin.y) * (*iter_y - obs._origin.y) +
@@ -327,13 +330,14 @@ void SpatioTemporalVoxelGrid::operator()(
         continue;
       }
 
+      // Offset the negative values by voxel_size for correct rounding later on
       double x = *iter_x < 0 ? *iter_x - _voxel_size : *iter_x;
       double y = *iter_y < 0 ? *iter_y - _voxel_size : *iter_y;
       double z = *iter_z < 0 ? *iter_z - _voxel_size : *iter_z;
 
+      // Mark a new occupied voxel in grid coordinates
       openvdb::Vec3d mark_grid(this->WorldToIndex(
           openvdb::Vec3d(x, y, z)));
-
       if (!this->MarkGridPoint(
           openvdb::Coord(
             mark_grid[0], mark_grid[1],
