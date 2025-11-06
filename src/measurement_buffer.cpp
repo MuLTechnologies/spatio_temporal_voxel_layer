@@ -81,12 +81,37 @@ MeasurementBuffer::MeasurementBuffer(
   _enabled(enabled), _model_type(model_type), clock_(clock), logger_(logger)
 /*****************************************************************************/
 {
+  // Create and precalculate the frustum object based on the sensor model used
+  if (_model_type == DEPTH_CAMERA) {
+    _frustum = new geometry::DepthCameraFrustum(
+      _vertical_fov, _horizontal_fov,
+      _min_z, _max_z);
+  } else if (_model_type == THREE_DIMENSIONAL_LIDAR) {
+    _frustum = new geometry::ThreeDimensionalLidarFrustum(
+      _vertical_fov, _vertical_fov_padding,
+      _horizontal_fov, _min_z, _max_z);
+  } else if (_model_type == VIRTUAL_PROXIMITY_SHIELD) {
+    _frustum = new geometry::ProximityShieldFrustum(
+      _base_length, _base_width,
+      _vertical_fov, _horizontal_fov,
+      _tan_half_vFOV, _tan_half_hFOV,
+      _min_z, _max_z);
+  } else {
+    // add else if statement for each implemented model
+    _frustum = nullptr;
+    throw std::runtime_error("Unsupported model type, can't create frustum!");
+  }
+
+  RCLCPP_INFO(logger_, "Frustum for model type %d created!", _model_type);
 }
 
 /*****************************************************************************/
 MeasurementBuffer::~MeasurementBuffer(void)
 /*****************************************************************************/
 {
+  if (_frustum) {
+    delete _frustum;
+  }
 }
 
 /*****************************************************************************/
@@ -138,6 +163,7 @@ void MeasurementBuffer::BufferROSCloud(
     _observation_list.front()._clearing = _clearing;
     _observation_list.front()._marking = _marking;
     _observation_list.front()._model_type = _model_type;
+    _observation_list.front()._frustum = _frustum;
 
     if (_clearing && !_marking) {
       // no need to buffer points

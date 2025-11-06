@@ -171,26 +171,7 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
   std::vector<observation::MeasurementReading>::const_iterator it =
     clearing_readings.begin();
   for (; it != clearing_readings.end(); ++it) {
-    geometry::Frustum * frustum;
-    if (it->_model_type == DEPTH_CAMERA) {
-      frustum = new geometry::DepthCameraFrustum(
-        it->_vertical_fov_in_rad, it->_horizontal_fov_in_rad,
-        it->_min_z_in_m, it->_max_z_in_m);
-    } else if (it->_model_type == THREE_DIMENSIONAL_LIDAR) {
-      frustum = new geometry::ThreeDimensionalLidarFrustum(
-        it->_vertical_fov_in_rad, it->_vertical_fov_padding_in_m,
-        it->_horizontal_fov_in_rad, it->_min_z_in_m, it->_max_z_in_m);
-    } else if (it->_model_type == VIRTUAL_PROXIMITY_SHIELD) {
-      frustum = new geometry::ProximityShieldFrustum(
-        it->_base_length, it->_base_width,
-        it->_vertical_fov_in_rad, it->_horizontal_fov_in_rad,
-        it->_tan_half_vFOV, it->_tan_half_hFOV,
-        it->_min_z_in_m, it->_max_z_in_m);
-    } else {
-      // add else if statement for each implemented model
-      delete frustum;
-      continue;
-    }
+    geometry::Frustum * frustum = it->_frustum;
 
     frustum->SetPosition(it->_origin);
     frustum->SetOrientation(it->_orientation);

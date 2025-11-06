@@ -47,6 +47,7 @@
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/quaternion.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
+#include "spatio_temporal_voxel_layer/frustum_models/frustum.hpp"
 
 enum ModelType
 {
@@ -74,7 +75,7 @@ struct MeasurementReading
     double obstacle_range, double min_z, double max_z, double vFOV,
     double vFOVPadding, double hFOV, double base_length, double base_width,
     double decay_acceleration, bool disable_decay_inside_frustum,
-    bool marking, bool clearing, ModelType model_type)
+    bool marking, bool clearing, ModelType model_type, geometry::Frustum * frustum)
   /*****************************************************************************/
     : _origin(origin),
     _cloud(std::make_shared < sensor_msgs::msg::PointCloud2 > (cloud)),
@@ -91,7 +92,8 @@ struct MeasurementReading
     _clearing(clearing),
     _disable_decay_inside_frustum(disable_decay_inside_frustum),
     _decay_acceleration(decay_acceleration),
-    _model_type(model_type)
+    _model_type(model_type),
+    _frustum(frustum)
   {
   }
 
@@ -123,7 +125,8 @@ struct MeasurementReading
     _clearing(obs._clearing),
     _disable_decay_inside_frustum(obs._disable_decay_inside_frustum),
     _decay_acceleration(obs._decay_acceleration),
-    _model_type(obs._model_type)
+    _model_type(obs._model_type),
+    _frustum(obs._frustum)
   {
   }
 
@@ -134,6 +137,7 @@ struct MeasurementReading
   double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad, _tan_half_vFOV, _tan_half_hFOV, _base_length, _base_width;
   double _marking, _clearing, _disable_decay_inside_frustum, _decay_acceleration;
   ModelType _model_type;
+  geometry::Frustum * _frustum;
 };
 
 }  // namespace observation
