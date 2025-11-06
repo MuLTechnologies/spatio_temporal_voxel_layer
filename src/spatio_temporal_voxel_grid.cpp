@@ -335,16 +335,21 @@ void SpatioTemporalVoxelGrid::operator()(
       double y = *iter_y < 0 ? *iter_y - _voxel_size : *iter_y;
       double z = *iter_z < 0 ? *iter_z - _voxel_size : *iter_z;
 
+      // Calculate the grid coordinates and exact voxel pose after transformations
       auto pose_world = openvdb::Vec3d(x, y, z);
       openvdb::Vec3d mark_grid(this->WorldToIndex(pose_world));
       auto coord_grid = openvdb::Coord(mark_grid[0], mark_grid[1], mark_grid[2]);
       auto voxel_pose_world = this->IndexToWorld(coord_grid);
 
       // Don't mark the data outside of the observation frustum
+      obs._frustum->SetPosition(obs._origin);
+      obs._frustum->SetOrientation(obs._orientation);
+      obs._frustum->TransformModel();
       if (!obs._frustum->IsInside(voxel_pose_world)) {
         continue;
       }
 
+      // Create a new occupied voxel
       if (!this->MarkGridPoint(coord_grid, cur_time))
       {
         std::cout << "Failed to mark point." << std::endl;
