@@ -174,7 +174,7 @@ private:
   int _voxel_min_points;
   bool _clear_buffer_after_reading, _enabled;
   ModelType _model_type;
-  geometry::Frustum * _frustum;
+  std::shared_ptr<geometry::Frustum> _frustum;
   rclcpp::Clock::SharedPtr clock_;
   rclcpp::Logger logger_;
 };

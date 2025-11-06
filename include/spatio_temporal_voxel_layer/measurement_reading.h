@@ -133,7 +133,7 @@ struct MeasurementReading
   double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad, _base_length, _base_width;
   double _marking, _clearing, _disable_decay_inside_frustum, _decay_acceleration;
   ModelType _model_type;
-  geometry::Frustum * _frustum;
+  std::shared_ptr<geometry::Frustum> _frustum;
 };
 
 }  // namespace observation

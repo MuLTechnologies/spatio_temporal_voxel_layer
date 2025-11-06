@@ -82,21 +82,20 @@ MeasurementBuffer::MeasurementBuffer(
 {
   // Create and precalculate the frustum object based on the sensor model used
   if (_model_type == DEPTH_CAMERA) {
-    _frustum = new geometry::DepthCameraFrustum(
+    _frustum = std::make_shared<geometry::DepthCameraFrustum>(
       _vertical_fov, _horizontal_fov,
       _min_z, _max_z);
   } else if (_model_type == THREE_DIMENSIONAL_LIDAR) {
-    _frustum = new geometry::ThreeDimensionalLidarFrustum(
+    _frustum = std::make_shared<geometry::ThreeDimensionalLidarFrustum>(
       _vertical_fov, _vertical_fov_padding,
       _horizontal_fov, _min_z, _max_z);
   } else if (_model_type == VIRTUAL_PROXIMITY_SHIELD) {
-    _frustum = new geometry::ProximityShieldFrustum(
+    _frustum = std::make_shared<geometry::ProximityShieldFrustum>(
       _base_length, _base_width,
       _vertical_fov, _horizontal_fov,
       _min_z, _max_z);
   } else {
     // add else if statement for each implemented model
-    _frustum = nullptr;
     throw std::runtime_error("Unsupported model type, can't create frustum!");
   }
 
@@ -107,9 +106,6 @@ MeasurementBuffer::MeasurementBuffer(
 MeasurementBuffer::~MeasurementBuffer(void)
 /*****************************************************************************/
 {
-  if (_frustum) {
-    delete _frustum;
-  }
 }
 
 /*****************************************************************************/
