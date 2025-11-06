@@ -356,10 +356,10 @@ void SpatioTemporalVoxelGrid::operator()(
         continue;
       }
 
-      // Offset the negative values by voxel_size for correct rounding lat
+      // Offset the negative values by voxel_size for correct rounding later on
       double x = *iter_x < 0 ? *iter_x - _voxel_size : *iter_x;
       double y = *iter_y < 0 ? *iter_y - _voxel_size : *iter_y;
-      double z = *iter_y < 0 ? *iter_z - _voxel_size : *iter_z;
+      double z = *iter_z < 0 ? *iter_z - _voxel_size : *iter_z;
 
       openvdb::Vec3d mark_grid(this->WorldToIndex(
           openvdb::Vec3d(x, y, z)));
