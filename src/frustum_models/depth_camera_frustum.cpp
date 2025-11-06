@@ -158,6 +158,9 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
 
   assert(_plane_normals.size() == 6);
   _valid_frustum = true;
+
+  // Store this initial state for future transformations
+  _precomputed_plane_normals = _plane_normals;
 }
 
 /*****************************************************************************/
@@ -169,6 +172,9 @@ void DepthCameraFrustum::TransformModel(void)
   }
 
   std::lock_guard<std::mutex> lock(_transform_mutex);
+
+  // Reset the calculations to precomputed initial state
+  _plane_normals = _precomputed_plane_normals;
 
   Eigen::Affine3d T = Eigen::Affine3d::Identity();
   T.pretranslate(_orientation.inverse() * _position);
