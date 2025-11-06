@@ -335,6 +335,11 @@ void SpatioTemporalVoxelGrid::operator()(
       double y = *iter_y < 0 ? *iter_y - _voxel_size : *iter_y;
       double z = *iter_z < 0 ? *iter_z - _voxel_size : *iter_z;
 
+      // Don't mark the data outside of the configured frustum
+      if (!obs._frustum->IsInside(openvdb::Vec3d(x, y, z))) {
+        continue;
+      }
+
       // Mark a new occupied voxel in grid coordinates
       openvdb::Vec3d mark_grid(this->WorldToIndex(
           openvdb::Vec3d(x, y, z)));
