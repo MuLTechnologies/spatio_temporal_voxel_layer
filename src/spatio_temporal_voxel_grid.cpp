@@ -312,10 +312,44 @@ void SpatioTemporalVoxelGrid::Mark(
 {
   boost::unique_lock<boost::mutex> lock(_grid_lock);
 
+  std::vector<frustum_model> obs_frustums;
+
+  obs_frustums.reserve(marking_readings.size());
+
+  std::vector<observation::MeasurementReading>::const_iterator it =
+    marking_readings.begin();
+  for (; it != marking_readings.end(); ++it) {
+    geometry::Frustum * frustum;
+    if (it->_model_type == DEPTH_CAMERA) {
+      frustum = new geometry::DepthCameraFrustum(
+        it->_vertical_fov_in_rad, it->_horizontal_fov_in_rad,
+        it->_min_z_in_m, it->_max_z_in_m);
+    } else if (it->_model_type == THREE_DIMENSIONAL_LIDAR) {
+      frustum = new geometry::ThreeDimensionalLidarFrustum(
+        it->_vertical_fov_in_rad, it->_vertical_fov_padding_in_m,
+        it->_horizontal_fov_in_rad, it->_min_z_in_m, it->_max_z_in_m);
+    } else if (it->_model_type == VIRTUAL_PROXIMITY_SHIELD) {
+      frustum = new geometry::ProximityShieldFrustum(
+        it->_base_length, it->_base_width,
+        it->_vertical_fov_in_rad, it->_horizontal_fov_in_rad,
+        it->_tan_half_vFOV, it->_tan_half_hFOV,
+        it->_min_z_in_m, it->_max_z_in_m);
+    } else {
+      // add else if statement for each implemented model
+      delete frustum;
+      continue;
+    }
+
+    frustum->SetPosition(it->_origin);
+    frustum->SetOrientation(it->_orientation);
+    frustum->TransformModel();
+    obs_frustums.emplace_back(frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
+  }
+
   // mark the grid
   if (marking_readings.size() > 0) {
     for (uint i = 0; i != marking_readings.size(); i++) {
-      (*this)(marking_readings.at(i));
+      (*this)(marking_readings.at(i), obs_frustums.at(i));
     }
   }
 }
@@ -323,7 +357,7 @@ void SpatioTemporalVoxelGrid::Mark(
 /*****************************************************************************/
 // This function marks occupied STV-Grid points from a provided observation source
 void SpatioTemporalVoxelGrid::operator()(
-  const observation::MeasurementReading & obs) const
+  const observation::MeasurementReading & obs, const frustum_model & obs_frustum) const
 /*****************************************************************************/
 {
   // Use this observation source only if it was configured as marking
@@ -350,25 +384,23 @@ void SpatioTemporalVoxelGrid::operator()(
         continue;
       }
 
-      // Filter the data outside of the configured field-of-view angles
-      if (dz > obs._tan_half_vFOV * dx - _voxel_size + obs._vertical_fov_padding_in_m
-        || dy > obs._tan_half_hFOV * dx + obs._vertical_fov_padding_in_m) {
-        continue;
-      }
-
       // Offset the negative values by voxel_size for correct rounding later on
       double x = *iter_x < 0 ? *iter_x - _voxel_size : *iter_x;
       double y = *iter_y < 0 ? *iter_y - _voxel_size : *iter_y;
       double z = *iter_z < 0 ? *iter_z - _voxel_size : *iter_z;
 
-      openvdb::Vec3d mark_grid(this->WorldToIndex(
-          openvdb::Vec3d(x, y, z)));
+      openvdb::Vec3d mark_grid(this->WorldToIndex(openvdb::Vec3d(x, y, z)));
+      auto coord = openvdb::Coord(mark_grid[0], mark_grid[1], mark_grid[2]);
+
+      // Transform the voxel after discretization back to the vec3 format to be checked for maximum precision of the check
+      auto voxel_pose_world = this->IndexToWorld(coord);
+      // Dont mark the voxels outside of the configured field-of-view angles
+      if (!obs_frustum.frustum->IsInside(voxel_pose_world)) {
+        continue;
+      }
 
       // Create a new occupied voxel
-      if (!this->MarkGridPoint(
-          openvdb::Coord(
-            mark_grid[0], mark_grid[1],
-            mark_grid[2]), cur_time))
+      if (!this->MarkGridPoint(coord, cur_time))
       {
         std::cout << "Failed to mark point." << std::endl;
       }

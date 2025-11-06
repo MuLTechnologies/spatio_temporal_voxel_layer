@@ -417,7 +417,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   current_ = true;
   was_reset_ = false;
 
-  RCLCPP_INFO(logger_, "%s initialization complete!", getName().c_str());
+  RCLCPP_INFO(logger_, "%s initialization complete! DUPA", getName().c_str());
 }
 
 void SpatioTemporalVoxelLayer::InitializeVoxelGrid(const std::shared_ptr<rclcpp::Clock> & clock)
