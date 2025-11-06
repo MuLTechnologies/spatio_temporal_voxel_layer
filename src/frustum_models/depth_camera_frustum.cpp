@@ -168,6 +168,8 @@ void DepthCameraFrustum::TransformModel(void)
     return;
   }
 
+  std::lock_guard<std::mutex> lock(_transform_mutex);
+
   Eigen::Affine3d T = Eigen::Affine3d::Identity();
   T.pretranslate(_orientation.inverse() * _position);
   T.prerotate(_orientation);
@@ -292,6 +294,7 @@ bool DepthCameraFrustum::IsInside(const openvdb::Vec3d & pt)
   if (!_valid_frustum) {
     return false;
   }
+  std::lock_guard<std::mutex> lock(_transform_mutex);
 
   std::vector<VectorWithPt3D>::iterator it;
   for (it = _plane_normals.begin(); it != _plane_normals.end(); ++it) {
@@ -310,6 +313,7 @@ bool DepthCameraFrustum::IsInside(const openvdb::Vec3d & pt)
 void DepthCameraFrustum::SetPosition(const geometry_msgs::msg::Point & origin)
 /*****************************************************************************/
 {
+  std::lock_guard<std::mutex> lock(_transform_mutex);
   _position = Eigen::Vector3d(origin.x, origin.y, origin.z);
 }
 
@@ -318,6 +322,7 @@ void DepthCameraFrustum::SetOrientation(
   const geometry_msgs::msg::Quaternion & quat)
 /*****************************************************************************/
 {
+  std::lock_guard<std::mutex> lock(_transform_mutex);
   _orientation = Eigen::Quaterniond(quat.w, quat.x, quat.y, quat.z);
 }
 
