@@ -49,7 +49,7 @@ DepthCameraFrustum::DepthCameraFrustum(
 /*****************************************************************************/
 {
   _valid_frustum = false;
-  #if VISUALIZE_FRUSTUM
+  #if VISUALIZE_FRUSTUM // TO-DO: use ROS2 parameter and unique name of the topic
   _node = std::make_shared<rclcpp::Node>("frustum_publisher");
   _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
   rclcpp::sleep_for(std::chrono::milliseconds(100));

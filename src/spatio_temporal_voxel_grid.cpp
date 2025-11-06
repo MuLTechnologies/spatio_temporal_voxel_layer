@@ -171,30 +171,13 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
   std::vector<observation::MeasurementReading>::const_iterator it =
     clearing_readings.begin();
   for (; it != clearing_readings.end(); ++it) {
-    geometry::Frustum * frustum;
-    if (it->_model_type == DEPTH_CAMERA) {
-      frustum = new geometry::DepthCameraFrustum(
-        it->_vertical_fov_in_rad,
-        it->_horizontal_fov_in_rad, it->_min_z_in_m, it->_max_z_in_m);
-    } else if (it->_model_type == THREE_DIMENSIONAL_LIDAR) {
-      frustum = new geometry::ThreeDimensionalLidarFrustum(
-        it->_vertical_fov_in_rad, it->_vertical_fov_padding_in_m,
-        it->_horizontal_fov_in_rad, it->_min_z_in_m, it->_max_z_in_m);
-    } else if (it->_model_type == VIRTUAL_PROXIMITY_SHIELD) {
-      frustum = new geometry::ProximityShieldFrustum(
-        it->_base_length, it->_base_width,
-        it->_vertical_fov_in_rad, it->_horizontal_fov_in_rad,
-        it->_min_z_in_m, it->_max_z_in_m);
-    } else {
-      // add else if statement for each implemented model
-      delete frustum;
-      continue;
+    if (it->_frustum == nullptr) {
+      throw std::runtime_error("clearing_readings->_frustum is nullptr!");
     }
-
-    frustum->SetPosition(it->_origin);
-    frustum->SetOrientation(it->_orientation);
-    frustum->TransformModel();
-    obs_frustums.emplace_back(frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
+    it->_frustum->SetPosition(it->_origin);
+    it->_frustum->SetOrientation(it->_orientation);
+    it->_frustum->TransformModel();
+    obs_frustums.emplace_back(it->_frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
   }
   TemporalClearAndGenerateCostmap(obs_frustums, cleared_cells);
 }
