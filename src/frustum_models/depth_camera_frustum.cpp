@@ -73,41 +73,25 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
     return;
   }
 
-  // Z vector and deflected vector capture
-  std::vector<Eigen::Vector3d> deflected_vecs;
-  deflected_vecs.reserve(4);
-  Eigen::Vector3d Z = Eigen::Vector3d::UnitZ();
-
-  // rotate going CCW
-  Eigen::Affine3d rx =
-    Eigen::Affine3d(Eigen::AngleAxisd(_vFOV / 2., Eigen::Vector3d::UnitX()));
-  Eigen::Affine3d ry =
-    Eigen::Affine3d(Eigen::AngleAxisd(_hFOV / 2., Eigen::Vector3d::UnitY()));
-  deflected_vecs.push_back(rx * ry * Z);
-
-  rx = Eigen::Affine3d(Eigen::AngleAxisd(-_vFOV / 2., Eigen::Vector3d::UnitX()));
-  deflected_vecs.push_back(rx * ry * Z);
-
-  ry = Eigen::Affine3d(Eigen::AngleAxisd(-_hFOV / 2., Eigen::Vector3d::UnitY()));
-  deflected_vecs.push_back(rx * ry * Z);
-
-  rx = Eigen::Affine3d(Eigen::AngleAxisd(_vFOV / 2., Eigen::Vector3d::UnitX()));
-  deflected_vecs.push_back(rx * ry * Z);
-
-  // get and store CCW 4 corners for each 2 planes at ends
+  // Create frustum vertices
   std::vector<Eigen::Vector3d> pt_;
-  pt_.reserve(2 * deflected_vecs.size());
-  std::vector<Eigen::Vector3d>::iterator it;
-  for (it = deflected_vecs.begin(); it != deflected_vecs.end(); ++it) {
-    // Here we calculate the min/max_d_on_vec in a way that the 2 planes at the end are actually 
-    // distant from the origin by the _min/max_d as we calculate the points based on the distance on the vector
-    auto min_d_on_vec = _min_d/it->z();
-    auto max_d_on_vec = _max_d/it->z();
-    pt_.push_back(*(it) * min_d_on_vec);
-    pt_.push_back(*(it) * max_d_on_vec);
-  }
+  pt_.reserve(8);
 
-  assert(pt_.size() == 8);
+  Eigen::Vector3d vertex_pt(tan(_hFOV/2), tan(_vFOV/2), 1);
+  pt_.push_back(vertex_pt*_min_d);
+  pt_.push_back(vertex_pt*_max_d);
+
+  vertex_pt = Eigen::Vector3d(-tan(_hFOV/2), tan(_vFOV/2), 1);
+  pt_.push_back(vertex_pt*_min_d);
+  pt_.push_back(vertex_pt*_max_d);
+
+  vertex_pt = Eigen::Vector3d(-tan(_hFOV/2), -tan(_vFOV/2), 1);
+  pt_.push_back(vertex_pt*_min_d);
+  pt_.push_back(vertex_pt*_max_d);
+
+  vertex_pt = Eigen::Vector3d(tan(_hFOV/2), -tan(_vFOV/2), 1);
+  pt_.push_back(vertex_pt*_min_d);
+  pt_.push_back(vertex_pt*_max_d);
 
   // cross each plane and get normals
   const Eigen::Vector3d v_01(pt_[1][0] - pt_[0][0],
