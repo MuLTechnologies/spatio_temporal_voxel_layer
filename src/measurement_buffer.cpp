@@ -80,6 +80,19 @@ MeasurementBuffer::MeasurementBuffer(
   _enabled(enabled), _model_type(model_type), clock_(clock), logger_(logger)
 /*****************************************************************************/
 {
+  CreateFrustum();
+}
+
+/*****************************************************************************/
+MeasurementBuffer::~MeasurementBuffer(void)
+/*****************************************************************************/
+{
+}
+
+/*****************************************************************************/
+void MeasurementBuffer::CreateFrustum(void)
+/*****************************************************************************/
+{
   // Create and precalculate the frustum object based on the sensor model used
   if (_model_type == DEPTH_CAMERA) {
     _frustum = std::make_shared<geometry::DepthCameraFrustum>(
@@ -100,12 +113,6 @@ MeasurementBuffer::MeasurementBuffer(
   }
 
   RCLCPP_INFO(logger_, "Frustum for model type %d created!", _model_type);
-}
-
-/*****************************************************************************/
-MeasurementBuffer::~MeasurementBuffer(void)
-/*****************************************************************************/
-{
 }
 
 /*****************************************************************************/

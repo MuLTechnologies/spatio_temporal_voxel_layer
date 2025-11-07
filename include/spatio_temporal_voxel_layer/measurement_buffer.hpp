@@ -121,6 +121,9 @@ public:
 
   ~MeasurementBuffer(void);
 
+  // Create or re-create a frustum object
+  void CreateFrustum(void);
+
   // Buffers for different types of pointclouds
   void BufferROSCloud(const sensor_msgs::msg::PointCloud2 & cloud);
 
