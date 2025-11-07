@@ -44,6 +44,7 @@
 
 // STL
 #include <vector>
+#include <mutex>
 // STVL
 #include "spatio_temporal_voxel_layer/frustum_models/frustum.hpp"
 
@@ -76,10 +77,12 @@ private:
   double Dot(const VectorWithPt3D &, const Eigen::Vector3d &) const;
 
   double _vFOV, _hFOV, _min_d, _max_d;
+  std::vector<VectorWithPt3D> _precomputed_plane_normals;
   std::vector<VectorWithPt3D> _plane_normals;
   Eigen::Vector3d _position;
   Eigen::Quaterniond _orientation;
   bool _valid_frustum;
+  std::mutex _transform_mutex;
 
   #if VISUALIZE_FRUSTUM
   std::vector<Eigen::Vector3d> _frustum_pts;

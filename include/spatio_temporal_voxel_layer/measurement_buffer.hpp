@@ -45,8 +45,11 @@
 #include <string>
 #include <chrono>
 #include <memory>
-// measurement structs
+// STVL
 #include "spatio_temporal_voxel_layer/measurement_reading.h"
+#include "spatio_temporal_voxel_layer/frustum_models/depth_camera_frustum.hpp"
+#include "spatio_temporal_voxel_layer/frustum_models/proximity_shield_frustum.hpp"
+#include "spatio_temporal_voxel_layer/frustum_models/three_dimensional_lidar_frustum.hpp"
 // PCL
 #include "pcl/common/transforms.h"
 #include "pcl/filters/voxel_grid.h"
@@ -118,6 +121,9 @@ public:
 
   ~MeasurementBuffer(void);
 
+  // Create or re-create a frustum object
+  void CreateFrustum(void);
+
   // Buffers for different types of pointclouds
   void BufferROSCloud(const sensor_msgs::msg::PointCloud2 & cloud);
 
@@ -171,6 +177,7 @@ private:
   int _voxel_min_points;
   bool _clear_buffer_after_reading, _enabled;
   ModelType _model_type;
+  std::shared_ptr<geometry::Frustum> _frustum;
   rclcpp::Clock::SharedPtr clock_;
   rclcpp::Logger logger_;
 };

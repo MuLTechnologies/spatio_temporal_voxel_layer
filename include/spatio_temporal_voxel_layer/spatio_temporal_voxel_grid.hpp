@@ -107,17 +107,14 @@ struct occupany_cell
 // Structure for wrapping frustum model and necessary metadata
 struct frustum_model
 {
-  frustum_model(geometry::Frustum * _frustum, const double & _factor, const bool & _persistent)
+  frustum_model(std::shared_ptr<geometry::Frustum> _frustum, const double & _factor, const bool & _persistent)
   : frustum(_frustum), accel_factor(_factor), is_decay_disabled(_persistent)
   {
   }
   ~frustum_model()
   {
-    if (frustum) {
-      delete frustum;
-    }
   }
-  geometry::Frustum * frustum;
+  std::shared_ptr<geometry::Frustum> frustum;
   const double accel_factor;
   const bool is_decay_disabled;
 };

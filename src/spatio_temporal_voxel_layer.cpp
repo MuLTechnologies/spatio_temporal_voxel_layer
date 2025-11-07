@@ -1127,6 +1127,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetMinObstacleHeight(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
@@ -1135,6 +1136,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetMaxObstacleHeight(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
@@ -1143,6 +1145,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetMinZ(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
@@ -1151,6 +1154,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetMaxZ(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
@@ -1159,6 +1163,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetVerticalFovAngle(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
@@ -1167,6 +1172,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetVerticalFovPadding(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
@@ -1175,6 +1181,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetHorizontalFovAngle(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
@@ -1183,6 +1190,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetBaseLength(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
@@ -1191,6 +1199,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             if (buffer->GetSourceName() == source) {
               buffer->Lock();
               buffer->SetBaseWidth(parameter.as_double());
+              buffer->CreateFrustum();
               buffer->Unlock();
             }
           }
