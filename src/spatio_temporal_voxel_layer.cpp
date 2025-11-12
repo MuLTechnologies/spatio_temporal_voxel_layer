@@ -179,10 +179,10 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   _clear_grid_around_pose_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
     getName() + "/clear_grid_around_pose", clear_grid_around_pose_callback, rmw_qos_profile_services_default, callback_group_);
 
-  auto clear_grid_around_robot_pose_callback = std::bind(
-    &SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback, this, _1, _2, _3);
-  _clear_grid_around_robot_pose_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
-    getName() + "/clear_grid_around_robot_pose", clear_grid_around_robot_pose_callback, rmw_qos_profile_services_default, callback_group_);
+  auto clear_grid_around_robot_footprint_callback = std::bind(
+    &SpatioTemporalVoxelLayer::ClearGridAroundRobotFootprintCallback, this, _1, _2, _3);
+  _clear_grid_around_robot_footprint_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
+    getName() + "/clear_grid_around_robot_footprint", clear_grid_around_robot_footprint_callback, rmw_qos_profile_services_default, callback_group_);
 
   auto save_stvl_map_callback = std::bind(
     &SpatioTemporalVoxelLayer::SaveStvlMapCallback, this, _1, _2, _3);
@@ -970,7 +970,7 @@ void SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback(
 }
 
 /*****************************************************************************/
-void SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback(
+void SpatioTemporalVoxelLayer::ClearGridAroundRobotFootprintCallback(
   const std::shared_ptr<rmw_request_id_t>/*header*/,
   std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Request> req,
   std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Response> resp)
