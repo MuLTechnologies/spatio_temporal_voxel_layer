@@ -979,17 +979,32 @@ void SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback(
   boost::recursive_mutex::scoped_lock lock(_voxel_grid_lock);
   try
   {
+    // Get the current robot pose instead of the pose from service request
     geometry_msgs::msg::PoseStamped global_robot_pose;
     if (!nav2_util::getCurrentPose(global_robot_pose, *tf_)) 
     {
       throw std::runtime_error("Failed to get robot pose");
     }
-    // Get the current robot pose instead of the pose from service request
-    clearCostmapLayerAroundPose(global_robot_pose.pose.position.x,global_robot_pose.pose.position.y,req->reset_distance);
+
+    double roll, pitch, yaw;
+    tf2::Quaternion quat;
+    tf2::fromMsg(global_robot_pose.pose.orientation, quat);
+    tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+
+    // Enlarge the footprint by specified distance and transform to the current pose
+    std::vector<geometry_msgs::msg::Point> transformed_enlarged_footprint;
+    std::vector<geometry_msgs::msg::Point> enlarged_footprint = getFootprint();
+    nav2_costmap_2d::padFootprint(enlarged_footprint, req->reset_distance);
+    nav2_costmap_2d::transformFootprint(
+      global_robot_pose.pose.position.x, global_robot_pose.pose.position.y, yaw,
+      enlarged_footprint, transformed_enlarged_footprint);
+
+    // Clear grid around the specified area
+    clearVoxelGridInsidePolygon(transformed_enlarged_footprint);
     resp->status = true;
     RCLCPP_INFO_STREAM(
       logger_,
-      "SpatioTemporalVoxelLayer: Cleared grid around robot pose, with reset distance: " << req->reset_distance);
+      "SpatioTemporalVoxelLayer: Cleared grid around robot footprint enlarged by " << req->reset_distance << "m distance.");
     return;
   }
   catch(const std::exception& e)
