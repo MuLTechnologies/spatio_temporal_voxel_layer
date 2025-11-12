@@ -959,12 +959,12 @@ void SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback(
     resp->status = true;
     RCLCPP_INFO_STREAM(
       logger_,
-      "SpatioTemporalVoxelLayer: Cleared gride around pose, with reset distance: " << req->reset_distance);
+      "SpatioTemporalVoxelLayer: Cleared grid around pose, with reset distance: " << req->reset_distance);
     return;
   }
   catch(const std::exception& e)
   {
-    RCLCPP_WARN_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
+    RCLCPP_ERROR_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
   }
   resp->status = false;
 }
@@ -989,12 +989,12 @@ void SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback(
     resp->status = true;
     RCLCPP_INFO_STREAM(
       logger_,
-      "SpatioTemporalVoxelLayer: Cleared gride around robot pose, with reset distance: " << req->reset_distance);
+      "SpatioTemporalVoxelLayer: Cleared grid around robot pose, with reset distance: " << req->reset_distance);
     return;
   }
   catch(const std::exception& e)
   {
-    RCLCPP_WARN_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
+    RCLCPP_ERROR_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
   }
   resp->status = false;
 }
@@ -1274,8 +1274,10 @@ void SpatioTemporalVoxelLayer::clearArea(
   CostmapLayer::clearArea(start_x, start_y, end_x, end_y, invert_area);
 }
 
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::clearCostmapLayerAroundPose(
   double pose_x, double pose_y, double reset_distance)
+/*****************************************************************************/
 {
   // Clear the layer by reset_distance in each direction
   double start_point_x = pose_x - reset_distance;
@@ -1295,8 +1297,10 @@ void SpatioTemporalVoxelLayer::clearCostmapLayerAroundPose(
   this->addExtraBounds(ox, oy, ox + width, oy + height);
 }
 
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::clearVoxelGridInsidePolygon(
   const std::vector<geometry_msgs::msg::Point> &polygon)
+/*****************************************************************************/
 {
   if (polygon.empty()) {
       return;
@@ -1313,12 +1317,16 @@ void SpatioTemporalVoxelLayer::clearVoxelGridInsidePolygon(
   _voxel_grid->ResetGridArea(polygon_occupancy_cell, true);
 }
 
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::isInManualModeCb(const std_msgs::msg::Bool::UniquePtr& msg)
+/*****************************************************************************/
 {
   is_in_manual_mode_ = msg->data;
 }
 
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::clearSquareRegion(double robot_x, double robot_y, double clear_range)
+/*****************************************************************************/
 {
     // Define the min and max bounds of the square region to clear
     double min_x = robot_x - clear_range;
