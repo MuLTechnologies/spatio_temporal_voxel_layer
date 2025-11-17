@@ -179,10 +179,10 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   _clear_grid_around_pose_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
     getName() + "/clear_grid_around_pose", clear_grid_around_pose_callback, rmw_qos_profile_services_default, callback_group_);
 
-  auto clear_grid_around_robot_pose_callback = std::bind(
-    &SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback, this, _1, _2, _3);
-  _clear_grid_around_robot_pose_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
-    getName() + "/clear_grid_around_robot_pose", clear_grid_around_robot_pose_callback, rmw_qos_profile_services_default, callback_group_);
+  auto clear_grid_around_robot_footprint_callback = std::bind(
+    &SpatioTemporalVoxelLayer::ClearGridAroundRobotFootprintCallback, this, _1, _2, _3);
+  _clear_grid_around_robot_footprint_srv = node->create_service<nav2_msgs::srv::ClearGridAroundPose>(
+    getName() + "/clear_grid_around_robot_footprint", clear_grid_around_robot_footprint_callback, rmw_qos_profile_services_default, callback_group_);
 
   auto save_stvl_map_callback = std::bind(
     &SpatioTemporalVoxelLayer::SaveStvlMapCallback, this, _1, _2, _3);
@@ -959,18 +959,18 @@ void SpatioTemporalVoxelLayer::ClearGridAroundPoseCallback(
     resp->status = true;
     RCLCPP_INFO_STREAM(
       logger_,
-      "SpatioTemporalVoxelLayer: Cleared gride around pose, with reset distance: " << req->reset_distance);
+      "SpatioTemporalVoxelLayer: Cleared grid around pose, with reset distance: " << req->reset_distance);
     return;
   }
   catch(const std::exception& e)
   {
-    RCLCPP_WARN_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
+    RCLCPP_ERROR_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
   }
   resp->status = false;
 }
 
 /*****************************************************************************/
-void SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback(
+void SpatioTemporalVoxelLayer::ClearGridAroundRobotFootprintCallback(
   const std::shared_ptr<rmw_request_id_t>/*header*/,
   std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Request> req,
   std::shared_ptr<nav2_msgs::srv::ClearGridAroundPose::Response> resp)
@@ -979,22 +979,37 @@ void SpatioTemporalVoxelLayer::ClearGridAroundRobotPoseCallback(
   boost::recursive_mutex::scoped_lock lock(_voxel_grid_lock);
   try
   {
+    // Get the current robot pose instead of the pose from service request
     geometry_msgs::msg::PoseStamped global_robot_pose;
     if (!nav2_util::getCurrentPose(global_robot_pose, *tf_)) 
     {
       throw std::runtime_error("Failed to get robot pose");
     }
-    // Get the current robot pose instead of the pose from service request
-    clearCostmapLayerAroundPose(global_robot_pose.pose.position.x,global_robot_pose.pose.position.y,req->reset_distance);
+
+    double roll, pitch, yaw;
+    tf2::Quaternion quat;
+    tf2::fromMsg(global_robot_pose.pose.orientation, quat);
+    tf2::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+
+    // Enlarge the footprint by specified distance and transform to the current pose
+    std::vector<geometry_msgs::msg::Point> transformed_enlarged_footprint;
+    std::vector<geometry_msgs::msg::Point> enlarged_footprint = getFootprint();
+    nav2_costmap_2d::padFootprint(enlarged_footprint, req->reset_distance);
+    nav2_costmap_2d::transformFootprint(
+      global_robot_pose.pose.position.x, global_robot_pose.pose.position.y, yaw,
+      enlarged_footprint, transformed_enlarged_footprint);
+
+    // Clear grid around the specified area
+    clearVoxelGridInsidePolygon(transformed_enlarged_footprint);
     resp->status = true;
     RCLCPP_INFO_STREAM(
       logger_,
-      "SpatioTemporalVoxelLayer: Cleared gride around robot pose, with reset distance: " << req->reset_distance);
+      "SpatioTemporalVoxelLayer: Cleared grid around robot footprint enlarged by " << req->reset_distance << "m distance.");
     return;
   }
   catch(const std::exception& e)
   {
-    RCLCPP_WARN_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
+    RCLCPP_ERROR_STREAM(logger_, "SpatioTemporalVoxelLayer: Failed to remove grid around pose with exception: " << e.what());
   }
   resp->status = false;
 }
@@ -1274,8 +1289,10 @@ void SpatioTemporalVoxelLayer::clearArea(
   CostmapLayer::clearArea(start_x, start_y, end_x, end_y, invert_area);
 }
 
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::clearCostmapLayerAroundPose(
   double pose_x, double pose_y, double reset_distance)
+/*****************************************************************************/
 {
   // Clear the layer by reset_distance in each direction
   double start_point_x = pose_x - reset_distance;
@@ -1295,8 +1312,10 @@ void SpatioTemporalVoxelLayer::clearCostmapLayerAroundPose(
   this->addExtraBounds(ox, oy, ox + width, oy + height);
 }
 
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::clearVoxelGridInsidePolygon(
   const std::vector<geometry_msgs::msg::Point> &polygon)
+/*****************************************************************************/
 {
   if (polygon.empty()) {
       return;
@@ -1313,12 +1332,16 @@ void SpatioTemporalVoxelLayer::clearVoxelGridInsidePolygon(
   _voxel_grid->ResetGridArea(polygon_occupancy_cell, true);
 }
 
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::isInManualModeCb(const std_msgs::msg::Bool::UniquePtr& msg)
+/*****************************************************************************/
 {
   is_in_manual_mode_ = msg->data;
 }
 
+/*****************************************************************************/
 void SpatioTemporalVoxelLayer::clearSquareRegion(double robot_x, double robot_y, double clear_range)
+/*****************************************************************************/
 {
     // Define the min and max bounds of the square region to clear
     double min_x = robot_x - clear_range;
