@@ -107,7 +107,7 @@ public:
   virtual void SetOrientation(const geometry_msgs::msg::Quaternion & quat) = 0;
 
   // transform model to the current coordinates
-  virtual void TransformModel(void) = 0;
+  virtual void TransformModel(bool alt = false) = 0;
 
 private:
   Eigen::Vector3d _position;

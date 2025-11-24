@@ -155,6 +155,10 @@ public:
   // Save the file to file with size information
   bool SaveGrid(const std::string & file_name, double & map_size_bytes);
 
+  void setMarkingFrustumPadding(const double & marking_frustum_padding) {
+    _marking_frustum_padding = marking_frustum_padding;
+  }
+
 protected:
   // Initialize grid metadata and library
   void InitializeGrid(void);
@@ -163,6 +167,7 @@ protected:
   // grid accessor methods
   bool MarkGridPoint(const openvdb::Coord & pt, const double & value) const;
   bool ClearGridPoint(const openvdb::Coord & pt) const;
+  bool IsGridPointEmpty(const openvdb::Coord & pt) const;
 
   // Check occupancy status of the grid
   bool IsGridEmpty(void) const;
@@ -186,7 +191,7 @@ protected:
 
   mutable openvdb::DoubleGrid::Ptr _grid;
   int _decay_model;
-  double _background_value, _voxel_size, _voxel_decay;
+  double _background_value, _voxel_size, _voxel_decay, _marking_frustum_padding;
   bool _pub_voxels;
   std::unique_ptr<std::vector<geometry_msgs::msg::Point32>> _grid_points;
   std::unordered_map<occupany_cell, uint> * _cost_map;

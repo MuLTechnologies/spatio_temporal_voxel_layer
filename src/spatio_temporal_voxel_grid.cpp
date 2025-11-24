@@ -308,6 +308,30 @@ void SpatioTemporalVoxelGrid::operator()(
   const observation::MeasurementReading & obs) const
 /*****************************************************************************/
 {
+  if (_marking_frustum_padding == 0.0) {
+    obs._frustum->SetPosition(obs._origin);
+    obs._frustum->SetOrientation(obs._orientation);
+    obs._frustum->TransformModel();
+  } else {
+    // Apply quaternion rotation to move the origin
+    Eigen::Quaterniond quaternion(obs._orientation.w, obs._orientation.x, obs._orientation.y, obs._orientation.z);
+    
+    // HENDLE THE HARDCODING HERE !!!!!!!!!!!!!!!!!!!!! PARAM THIS HAVE TO BE XDDD
+    Eigen::Vector3d displacement_vector(0.0, 0.0, _marking_frustum_padding); // The displacement vector along the z-axis which is forward in camera frame
+    Eigen::Vector3d new_origin = quaternion * displacement_vector + Eigen::Vector3d(obs._origin.x, obs._origin.y, obs._origin.z);
+          
+    // Convert Eigen::Vector3d to geometry_msgs::msg::Point
+    geometry_msgs::msg::Point new_origin_msg;
+    new_origin_msg.x = new_origin[0];
+    new_origin_msg.y = new_origin[1];
+    new_origin_msg.z = new_origin[2];
+
+    // Update and check frustum
+    obs._frustum->SetPosition(new_origin_msg);
+    obs._frustum->SetOrientation(obs._orientation);
+    obs._frustum->TransformModel(true); // true for pub alf frustum
+  }
+
   // Use this observation source only if it was configured as marking
   if (obs._marking) {
     float mark_range_2 = obs._obstacle_range_in_m * obs._obstacle_range_in_m;
@@ -341,17 +365,14 @@ void SpatioTemporalVoxelGrid::operator()(
       auto coord_grid = openvdb::Coord(mark_grid[0], mark_grid[1], mark_grid[2]);
       auto voxel_pose_world = this->IndexToWorld(coord_grid);
 
-      // Don't mark the data outside of the observation frustum
-      obs._frustum->SetPosition(obs._origin);
-      obs._frustum->SetOrientation(obs._orientation);
-      obs._frustum->TransformModel();
-      if (!obs._frustum->IsInside(voxel_pose_world)) {
+      // We dont mark only if the naw voxel is outside of the frustum and its not already marked
+      // This is done to not mark unclearable points (IsInside)
+      // And to not clear points outside where there is data (IsGridPointEmpty)
+      if (!obs._frustum->IsInside(voxel_pose_world) && this->IsGridPointEmpty(coord_grid)) {
         continue;
       }
-
-      // Create a new occupied voxel
-      if (!this->MarkGridPoint(coord_grid, cur_time))
-      {
+      // Try marking the point in the grid
+      if (!this->MarkGridPoint(coord_grid, cur_time)) {
         std::cout << "Failed to mark point." << std::endl;
       }
     }
@@ -499,6 +520,15 @@ bool SpatioTemporalVoxelGrid::pointInPolygon(const occupany_cell& point, const s
             inside = !inside;
     }
     return inside;
+}
+
+/*****************************************************************************/
+bool SpatioTemporalVoxelGrid::IsGridPointEmpty(
+  const openvdb::Coord & pt) const
+/*****************************************************************************/
+{
+  openvdb::DoubleGrid::Accessor accessor = _grid->getAccessor();
+  return !accessor.isValueOn(pt);
 }
 
 

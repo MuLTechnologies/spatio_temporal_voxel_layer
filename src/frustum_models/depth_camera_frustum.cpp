@@ -52,6 +52,8 @@ DepthCameraFrustum::DepthCameraFrustum(
   #if VISUALIZE_FRUSTUM // TO-DO: use ROS2 parameter and unique name of the topic
   _node = std::make_shared<rclcpp::Node>("frustum_publisher");
   _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
+  _frustum_alt_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum_alt", 10);
+
   rclcpp::sleep_for(std::chrono::milliseconds(100));
   #endif
   this->ComputePlaneNormals();
@@ -148,7 +150,7 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
 }
 
 /*****************************************************************************/
-void DepthCameraFrustum::TransformModel(void)
+void DepthCameraFrustum::TransformModel(bool alt)
 /*****************************************************************************/
 {
   if (!_valid_frustum) {
@@ -212,7 +214,13 @@ void DepthCameraFrustum::TransformModel(void)
   msg.pose.position.y = 0;
   msg.pose.position.z = 0;
   msg.header.stamp = _node->now();
-  msg.color.g = 1.0f;
+
+  if (alt) {
+    msg.color.b = 1.0f;
+  } else { 
+    msg.color.g = 1.0f;
+  }
+
   msg.color.a = 1.0;
 
   // annoying but only evaluates once
@@ -273,7 +281,11 @@ void DepthCameraFrustum::TransformModel(void)
 
   //   msg_list.markers.push_back(msg);
   // }
-  _frustum_pub->publish(msg_list);
+  if (alt) {
+    _frustum_alt_pub->publish(msg_list);
+  } else { 
+    _frustum_pub->publish(msg_list);
+  }
   #endif
 }
 

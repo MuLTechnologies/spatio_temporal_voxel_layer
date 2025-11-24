@@ -58,7 +58,7 @@ public:
   virtual ~ThreeDimensionalLidarFrustum(void);
 
   // Does nothing in 3D lidar model
-  virtual void TransformModel(void);
+  virtual void TransformModel(bool alt = false);
 
   // determine if a point is inside of the transformed frustum
   virtual bool IsInside(const openvdb::Vec3d & pt);

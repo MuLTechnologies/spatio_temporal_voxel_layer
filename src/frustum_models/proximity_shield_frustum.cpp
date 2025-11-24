@@ -153,7 +153,7 @@ void ProximityShieldFrustum::ComputePlaneNormals(void)
 }
 
 /*****************************************************************************/
-void ProximityShieldFrustum::TransformModel(void)
+void ProximityShieldFrustum::TransformModel(bool alt)
 /*****************************************************************************/
 {
   if (!_valid_frustum) {

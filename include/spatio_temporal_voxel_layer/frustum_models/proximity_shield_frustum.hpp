@@ -61,7 +61,7 @@ public:
   virtual ~ProximityShieldFrustum(void);
 
   // transform plane normals by proximity sensor pose
-  virtual void TransformModel(void);
+  virtual void TransformModel(bool alt = false);
 
   // determine if a point is inside of the transformed frustum
   virtual bool IsInside(const openvdb::Vec3d & pt);

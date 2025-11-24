@@ -40,7 +40,7 @@
 #ifndef SPATIO_TEMPORAL_VOXEL_LAYER__FRUSTUM_MODELS__DEPTH_CAMERA_FRUSTUM_HPP_
 #define SPATIO_TEMPORAL_VOXEL_LAYER__FRUSTUM_MODELS__DEPTH_CAMERA_FRUSTUM_HPP_
 
-#define VISUALIZE_FRUSTUM 0
+#define VISUALIZE_FRUSTUM 1 // TODO MAKE THIS AS A PARAM
 
 // STL
 #include <vector>
@@ -61,7 +61,7 @@ public:
   virtual ~DepthCameraFrustum(void);
 
   // transform plane normals by depth camera pose
-  virtual void TransformModel(void);
+  virtual void TransformModel(bool alt = false);
 
   // determine if a point is inside of the transformed frustum
   virtual bool IsInside(const openvdb::Vec3d & pt);
@@ -88,6 +88,7 @@ private:
   std::vector<Eigen::Vector3d> _frustum_pts;
   rclcpp::Node::SharedPtr _node;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _frustum_pub;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _frustum_alt_pub;
   #endif
 };
 
