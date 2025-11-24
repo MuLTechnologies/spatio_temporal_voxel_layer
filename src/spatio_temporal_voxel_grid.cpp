@@ -221,6 +221,10 @@ void SpatioTemporalVoxelGrid::TemporalClearAndGenerateCostmap(
           const double frustum_acceleration = GetFrustumAcceleration(
             time_since_marking, frustum_it->accel_factor);
 
+          // TODO: Disable this param compleetly or make a additional param for this
+          // As of now we do not use the frustum_acceleration
+          // const double time_until_decay = base_duration_to_decay -
+          //   frustum_acceleration;
           const double time_until_decay = base_duration_to_decay -
             time_since_marking;
           if (time_until_decay < 0.) {
