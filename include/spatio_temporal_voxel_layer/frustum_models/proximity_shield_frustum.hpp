@@ -40,8 +40,6 @@
 #ifndef SPATIO_TEMPORAL_VOXEL_LAYER__FRUSTUM_MODELS__PROXIMITY_SHIELD_FRUSTUM_HPP_
 #define SPATIO_TEMPORAL_VOXEL_LAYER__FRUSTUM_MODELS__PROXIMITY_SHIELD_FRUSTUM_HPP_
 
-#define VISUALIZE_FRUSTUM_PROXIMITY_SHIELD 0
-
 // STL
 #include <vector>
 // STVL
@@ -61,8 +59,11 @@ public:
   virtual ~ProximityShieldFrustum(void);
 
   // transform plane normals by proximity sensor pose
-  virtual void TransformModel(bool alt = false);
+  virtual void TransformModel();
 
+  // Visualize the frutum on a topic
+  virtual void VisualizeFrustum(bool alt = false);
+  
   // determine if a point is inside of the transformed frustum
   virtual bool IsInside(const openvdb::Vec3d & pt);
 
@@ -82,11 +83,10 @@ private:
   Eigen::Quaterniond _orientation;
   bool _valid_frustum;
 
-  #if VISUALIZE_FRUSTUM_PROXIMITY_SHIELD
+  // Visualization
   std::vector<Eigen::Vector3d> _frustum_pts;
   rclcpp::Node::SharedPtr _node;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _frustum_pub;
-  #endif
 };
 
 }  // namespace geometry

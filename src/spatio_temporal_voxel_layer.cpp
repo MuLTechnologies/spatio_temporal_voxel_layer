@@ -82,7 +82,8 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     getName().c_str(), _global_frame.c_str());
 
   bool track_unknown_space;
-  double transform_tolerance, map_save_time;
+  double transform_tolerance, map_save_time, marking_frustum_padding;
+  bool visualize_frustum; 
   int decay_model_int;
   // source names
   auto node = node_.lock();
@@ -145,6 +146,14 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   // if mapping, how often to save a map for safety
   declareParameter("map_save_duration", rclcpp::ParameterValue(60.0));
   node->get_parameter(name_ + ".map_save_duration", map_save_time);
+  // Set the static mapping frustum padding TODO: Make it dynamic based on current speed
+  declareParameter("marking_frustum_padding", rclcpp::ParameterValue(0.0));
+  node->get_parameter(name_ + ".marking_frustum_padding", marking_frustum_padding);
+  // Set the static mapping frustum padding TODO: Make it dynamic based on current speed
+  declareParameter("visualize_frustum", rclcpp::ParameterValue(false));
+  node->get_parameter(name_ + ".visualize_frustum", visualize_frustum);
+  
+
   RCLCPP_INFO(
     logger_,
     "%s loaded parameters from parameter server.", getName().c_str());
@@ -209,6 +218,9 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
       node->get_clock(), _voxel_size, static_cast<double>(default_value_), _decay_model,
       _voxel_decay, _publish_voxels, false);
   }
+
+  _voxel_grid->setMarkingFrustumPadding(marking_frustum_padding);
+  _voxel_grid->setVisualizeFrustum(visualize_frustum);
 
   matchSize();
 
@@ -1218,6 +1230,8 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
               buffer->Unlock();
             }
           }
+        } else if (name == name_ + "." + "marking_frustum_padding") {
+          _voxel_grid->setMarkingFrustumPadding(parameter.as_double());
         }
       }
     }
@@ -1231,6 +1245,9 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
               buffer->Unlock();
             }
           }
+      }
+      if (name == name_ + "." + "visualize_frustum") {
+        _voxel_grid->setVisualizeFrustum(parameter.as_bool());
       }
       if (name == name_ + "." + "enabled") {
         bool enable = parameter.as_bool();

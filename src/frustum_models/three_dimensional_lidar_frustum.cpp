@@ -66,7 +66,7 @@ ThreeDimensionalLidarFrustum::~ThreeDimensionalLidarFrustum(void)
 }
 
 /*****************************************************************************/
-void ThreeDimensionalLidarFrustum::TransformModel(bool alt)
+void ThreeDimensionalLidarFrustum::TransformModel()
 /*****************************************************************************/
 {
   _orientation_conjugate = _orientation.conjugate();

@@ -177,6 +177,9 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
     it->_frustum->SetPosition(it->_origin);
     it->_frustum->SetOrientation(it->_orientation);
     it->_frustum->TransformModel();
+    if (_visualize_frustum) {
+      it->_frustum->VisualizeFrustum();
+    }
     obs_frustums.emplace_back(it->_frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
   }
   TemporalClearAndGenerateCostmap(obs_frustums, cleared_cells);
@@ -219,7 +222,7 @@ void SpatioTemporalVoxelGrid::TemporalClearAndGenerateCostmap(
             time_since_marking, frustum_it->accel_factor);
 
           const double time_until_decay = base_duration_to_decay -
-            frustum_acceleration;
+            time_since_marking;
           if (time_until_decay < 0.) {
             // expired by acceleration
             cleared_point = true;
@@ -228,11 +231,12 @@ void SpatioTemporalVoxelGrid::TemporalClearAndGenerateCostmap(
             }
             break;
           } else {
-            const double updated_mark = cit_grid.getValue() -
-              frustum_acceleration;
-            if (!this->MarkGridPoint(pt_index, updated_mark)) {
-              std::cout << "Failed to update mark." << std::endl;
-            }
+            // Since the frustum_acceleration is disabled we do not update values of point since marking
+            // const double updated_mark = cit_grid.getValue() -
+            //   frustum_acceleration;
+            // if (!this->MarkGridPoint(pt_index, updated_mark)) {
+            //   std::cout << "Failed to update mark." << std::endl;
+            // }
             break;
           }
         }
@@ -312,6 +316,9 @@ void SpatioTemporalVoxelGrid::operator()(
     obs._frustum->SetPosition(obs._origin);
     obs._frustum->SetOrientation(obs._orientation);
     obs._frustum->TransformModel();
+if (_visualize_frustum) {
+      obs._frustum->VisualizeFrustum();
+    }
   } else {
     // Apply quaternion rotation to move the origin
     Eigen::Quaterniond quaternion(obs._orientation.w, obs._orientation.x, obs._orientation.y, obs._orientation.z);
@@ -329,7 +336,10 @@ void SpatioTemporalVoxelGrid::operator()(
     // Update and check frustum
     obs._frustum->SetPosition(new_origin_msg);
     obs._frustum->SetOrientation(obs._orientation);
-    obs._frustum->TransformModel(true); // true for pub alf frustum
+    obs._frustum->TransformModel();
+    if (_visualize_frustum) {
+      obs._frustum->VisualizeFrustum(true);
+    }
   }
 
   // Use this observation source only if it was configured as marking
