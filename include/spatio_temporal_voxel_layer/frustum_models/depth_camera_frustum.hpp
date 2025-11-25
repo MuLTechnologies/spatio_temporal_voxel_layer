@@ -90,7 +90,6 @@ private:
   rclcpp::Node::SharedPtr _node;
   std::string _name;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _frustum_pub;
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _frustum_alt_pub;
 };
 
 }  // namespace geometry
