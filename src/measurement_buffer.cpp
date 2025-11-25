@@ -97,11 +97,11 @@ void MeasurementBuffer::CreateFrustum(void)
   if (_model_type == DEPTH_CAMERA) {
     _clearing_frustum = std::make_shared<geometry::DepthCameraFrustum>(
       _vertical_fov, _horizontal_fov,
-      _min_z, _max_z, 0.0); 
+      _min_z, _max_z, 0.0, _source_name + "_clear"); 
     // Padding set to 0.0 for clearing
     _marking_frustum = std::make_shared<geometry::DepthCameraFrustum>(
       _vertical_fov, _horizontal_fov,
-      _min_z, _max_z, _marking_frustum_padding);
+      _min_z, _max_z, _marking_frustum_padding, _source_name + "_mark");
   } else if (_model_type == THREE_DIMENSIONAL_LIDAR) {
     _clearing_frustum = std::make_shared<geometry::ThreeDimensionalLidarFrustum>(
       _vertical_fov, _vertical_fov_padding,

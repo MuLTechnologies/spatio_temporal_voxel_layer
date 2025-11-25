@@ -219,7 +219,6 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
       _voxel_decay, _publish_voxels, false);
   }
 
-  _voxel_grid->setMarkingFrustumPadding(marking_frustum_padding);
   _voxel_grid->setVisualizeFrustum(visualize_frustum);
   
   matchSize();
@@ -1235,7 +1234,6 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             buffer->CreateFrustum();
             buffer->Unlock();
           }
-          _voxel_grid->setMarkingFrustumPadding(parameter.as_double());
         }
       }
     }

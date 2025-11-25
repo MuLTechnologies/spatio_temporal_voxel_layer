@@ -44,15 +44,14 @@ namespace geometry
 /*****************************************************************************/
 DepthCameraFrustum::DepthCameraFrustum(
   const double & vFOV, const double & hFOV, const double & min_dist,
-  const double & max_dist, const double & frustum_padding)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding)
+  const double & max_dist, const double & frustum_padding, const std::string & frustum_name)
+: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding), _name(frustum_name)
 /*****************************************************************************/
 {
   _valid_frustum = false;
   _node = std::make_shared<rclcpp::Node>("frustum_publisher");
   // TODO: Add variable frustum name based on the namespace in marker 
   _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
-  _frustum_alt_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum_alt", 10);
   // Substract 2 x _frustum_padding from the _max_d to 1 to account for the moved origin and second for the padding at the end
   _max_d = _max_d - 2 * _frustum_padding;
   rclcpp::sleep_for(std::chrono::milliseconds(100));
@@ -185,8 +184,8 @@ void DepthCameraFrustum::VisualizeFrustum(bool alt) {
   visualization_msgs::msg::Marker msg;
 
   // frustum lines
-  msg.header.frame_id = std::string("odom");   // Use global_frame of costmap
-  msg.type = visualization_msgs::msg::Marker::LINE_STRIP;
+  msg.header.frame_id = std::string("odom");  // Use global_frame of costmap
+  msg.type = visualization_msgs::msg::Marker::LINE_LIST;
   msg.scale.x = 0.02;   // line width
   msg.pose.orientation.w = 1.0;
   msg.pose.position.x = 0;
@@ -194,35 +193,18 @@ void DepthCameraFrustum::VisualizeFrustum(bool alt) {
   msg.pose.position.z = 0;
   msg.header.stamp = _node->now();
 
-  if (alt) {
+  if (_frustum_padding != 0.0) {
     msg.color.b = 1.0f;
   } else { 
     msg.color.g = 1.0f;
   }
 
-  msg.color.a = 1.0;
+  msg.color.a = 1.0; 
 
-  // annoying but only evaluates once
-  static const std::vector<int> v1 = {0, 2};
-  static const std::vector<int> v2 = {2, 4};
-  static const std::vector<int> v3 = {4, 6};
-  static const std::vector<int> v4 = {6, 0};
-  static const std::vector<int> v5 = {1, 3};
-  static const std::vector<int> v6 = {3, 5};
-  static const std::vector<int> v7 = {5, 7};
-  static const std::vector<int> v8 = {7, 1};
-  static const std::vector<int> v9 = {0, 1};
-  static const std::vector<int> v10 = {2, 3};
-  static const std::vector<int> v11 = {4, 5};
-  static const std::vector<int> v12 = {6, 7};
   static const std::vector<std::vector<int>> v_t = \
-  {v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12};
+  {{0,2}, {2,4}, {4,6}, {6,0}, {1,3}, {3,5}, {5,7}, {7,1}, {0,1}, {2,3}, {4,5}, {6,7}};
 
   for (uint i = 0; i != v_t.size(); i++) {
-    // frustum lines
-    msg.ns = "line_" + std::to_string(i);
-    msg.points.clear();
-
     for (uint j = 0; j != v_t[i].size(); j++) {
       Eigen::Vector3d T_pt = T * _frustum_pts.at(v_t[i][j]);
       geometry_msgs::msg::Point point;
@@ -231,16 +213,16 @@ void DepthCameraFrustum::VisualizeFrustum(bool alt) {
       point.z = T_pt[2];
       msg.points.push_back(point);
     }
-    msg_list.markers.push_back(msg);
   }
 
-  if (alt) {
-    _frustum_alt_pub->publish(msg_list);
-  } else { 
-    _frustum_pub->publish(msg_list);
-  }
+  // Set namespace for all points
+  msg.ns = _name;
+
+  // Add the single marker to our list of markers
+  msg_list.markers.push_back(msg);
+
+  _frustum_pub->publish(msg_list);
 }
-
 
 /*****************************************************************************/
 bool DepthCameraFrustum::IsInside(const openvdb::Vec3d & pt)

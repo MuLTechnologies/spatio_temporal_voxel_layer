@@ -155,10 +155,6 @@ public:
   // Save the file to file with size information
   bool SaveGrid(const std::string & file_name, double & map_size_bytes);
 
-  void setMarkingFrustumPadding(const double & marking_frustum_padding) {
-    _marking_frustum_padding = marking_frustum_padding;
-  }
-
   void setVisualizeFrustum(const bool & visualize_frustum) {
     _visualize_frustum = visualize_frustum;
   }
@@ -195,7 +191,7 @@ protected:
 
   mutable openvdb::DoubleGrid::Ptr _grid;
   int _decay_model;
-  double _background_value, _voxel_size, _voxel_decay, _marking_frustum_padding, _visualize_frustum;
+  double _background_value, _voxel_size, _voxel_decay, _visualize_frustum;
   bool _pub_voxels;
   std::unique_ptr<std::vector<geometry_msgs::msg::Point32>> _grid_points;
   std::unordered_map<occupany_cell, uint> * _cost_map;
