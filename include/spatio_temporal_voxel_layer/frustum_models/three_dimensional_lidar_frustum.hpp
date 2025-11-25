@@ -61,7 +61,7 @@ public:
   virtual void TransformModel();
 
   // Visualize the frutum on a topic - for now its empty since we dont have a vis for lidar sensor
-  virtual void VisualizeFrustum(bool alt = false) {};
+  virtual void VisualizeFrustum() {};
 
   // determine if a point is inside of the transformed frustum
   virtual bool IsInside(const openvdb::Vec3d & pt);

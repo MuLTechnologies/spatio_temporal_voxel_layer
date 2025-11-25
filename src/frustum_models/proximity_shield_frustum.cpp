@@ -166,7 +166,7 @@ void ProximityShieldFrustum::TransformModel()
   }
 }
 
-void ProximityShieldFrustum::VisualizeFrustum(bool alt) {
+void ProximityShieldFrustum::VisualizeFrustum() {
   Eigen::Affine3d T = Eigen::Affine3d::Identity();
   T.pretranslate(_orientation.inverse() * _position);
   T.prerotate(_orientation);

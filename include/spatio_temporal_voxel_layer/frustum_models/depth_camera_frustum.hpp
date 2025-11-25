@@ -55,14 +55,14 @@ class DepthCameraFrustum : public Frustum
 public:
   DepthCameraFrustum(
     const double & vFOV, const double & hFOV,
-    const double & min_dist, const double & max_dist, const double & frustum_padding, const std::string & frustum_name);
+    const double & min_dist, const double & max_dist, const double & frustum_padding, const std::string & frustum_name, const bool & visualize_frustum);
   virtual ~DepthCameraFrustum(void);
 
   // transform plane normals by depth camera pose
   virtual void TransformModel();
 
   // Visualize the frutum on a topic
-  virtual void VisualizeFrustum(bool alt = false);
+  virtual void VisualizeFrustum();
 
   // determine if a point is inside of the transformed frustum
   virtual bool IsInside(const openvdb::Vec3d & pt);
@@ -82,7 +82,7 @@ private:
   std::vector<VectorWithPt3D> _plane_normals;
   Eigen::Vector3d _position;
   Eigen::Quaterniond _orientation;
-  bool _valid_frustum;
+  bool _valid_frustum, _visualize_frustum;
   std::mutex _transform_mutex;
   
   // Visualization

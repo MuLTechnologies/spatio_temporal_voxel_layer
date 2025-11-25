@@ -218,8 +218,6 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
       node->get_clock(), _voxel_size, static_cast<double>(default_value_), _decay_model,
       _voxel_decay, _publish_voxels, false);
   }
-
-  _voxel_grid->setVisualizeFrustum(visualize_frustum);
   
   matchSize();
 
@@ -339,7 +337,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
           max_obstacle_height, obstacle_range, *tf_, _global_frame, sensor_frame,
           transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV, marking_frustum_padding, base_length, base_width,
           decay_acceleration, disable_decay_inside_frustum, marking, clearing, _voxel_size,
-          filter, voxel_min_points, enabled, clear_after_reading, model_type,
+          filter, voxel_min_points, enabled, clear_after_reading, model_type, visualize_frustum,
           node->get_clock(), node->get_logger())));
 
     // Add buffer to marking observation buffers
@@ -1249,7 +1247,12 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
           }
       }
       if (name == name_ + "." + "visualize_frustum") {
-        _voxel_grid->setVisualizeFrustum(parameter.as_bool());
+        for (auto & buffer : _observation_buffers) {
+          buffer->Lock();
+          buffer->SetVisualizeFrustum(parameter.as_bool());
+          buffer->CreateFrustum();
+          buffer->Unlock();
+        }
       }
       if (name == name_ + "." + "enabled") {
         bool enable = parameter.as_bool();

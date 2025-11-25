@@ -61,7 +61,7 @@ MeasurementBuffer::MeasurementBuffer(
   const double & decay_acceleration, const bool & disable_decay_inside_frustum, const bool & marking,
   const bool & clearing, const double & voxel_size, const Filters & filter,
   const int & voxel_min_points, const bool & enabled,
-  const bool & clear_buffer_after_reading, const ModelType & model_type,
+  const bool & clear_buffer_after_reading, const ModelType & model_type, const bool & visualize_frustum,
   rclcpp::Clock::SharedPtr clock, rclcpp::Logger logger)
 : _buffer(tf),
   _observation_keep_time(rclcpp::Duration::from_seconds(observation_keep_time)),
@@ -77,7 +77,7 @@ MeasurementBuffer::MeasurementBuffer(
   _disable_decay_inside_frustum(disable_decay_inside_frustum), _marking(marking), _clearing(clearing),
   _filter(filter), _voxel_min_points(voxel_min_points),
   _clear_buffer_after_reading(clear_buffer_after_reading),
-  _enabled(enabled), _model_type(model_type), clock_(clock), logger_(logger)
+  _enabled(enabled), _model_type(model_type), _visualize_frustum(visualize_frustum), clock_(clock), logger_(logger)
 /*****************************************************************************/
 {
   CreateFrustum();
@@ -97,11 +97,11 @@ void MeasurementBuffer::CreateFrustum(void)
   if (_model_type == DEPTH_CAMERA) {
     _clearing_frustum = std::make_shared<geometry::DepthCameraFrustum>(
       _vertical_fov, _horizontal_fov,
-      _min_z, _max_z, 0.0, _source_name + "_clear"); 
+      _min_z, _max_z, 0.0, _source_name + "_clear", _visualize_frustum); 
     // Padding set to 0.0 for clearing
     _marking_frustum = std::make_shared<geometry::DepthCameraFrustum>(
       _vertical_fov, _horizontal_fov,
-      _min_z, _max_z, _marking_frustum_padding, _source_name + "_mark");
+      _min_z, _max_z, _marking_frustum_padding, _source_name + "_mark", _visualize_frustum);
   } else if (_model_type == THREE_DIMENSIONAL_LIDAR) {
     _clearing_frustum = std::make_shared<geometry::ThreeDimensionalLidarFrustum>(
       _vertical_fov, _vertical_fov_padding,
@@ -375,6 +375,12 @@ void MeasurementBuffer::SetFrustumPadding(const double & frustum_padding)
 /*****************************************************************************/
 {
   _marking_frustum_padding = frustum_padding;
+}
+
+void MeasurementBuffer::SetVisualizeFrustum(const double & visualize_frustum)
+/*****************************************************************************/
+{
+  _visualize_frustum = visualize_frustum;
 }
 
 /*****************************************************************************/

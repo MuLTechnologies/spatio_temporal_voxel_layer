@@ -44,18 +44,20 @@ namespace geometry
 /*****************************************************************************/
 DepthCameraFrustum::DepthCameraFrustum(
   const double & vFOV, const double & hFOV, const double & min_dist,
-  const double & max_dist, const double & frustum_padding, const std::string & frustum_name)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding), _name(frustum_name)
+  const double & max_dist, const double & frustum_padding, const std::string & frustum_name, const bool & visualize_frustum)
+: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding), _name(frustum_name), _visualize_frustum(visualize_frustum)
 /*****************************************************************************/
 {
   _valid_frustum = false;
-  _node = std::make_shared<rclcpp::Node>("frustum_publisher");
-  // TODO: Add variable frustum name based on the namespace in marker 
-  _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
   // Substract 2 x _frustum_padding from the _max_d to 1 to account for the moved origin and second for the padding at the end
   _max_d = _max_d - 2 * _frustum_padding;
-  rclcpp::sleep_for(std::chrono::milliseconds(100));
   this->ComputePlaneNormals();
+
+  if(_visualize_frustum) {
+    _node = std::make_shared<rclcpp::Node>("frustum_publisher");
+    _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
+    rclcpp::sleep_for(std::chrono::milliseconds(100));
+  }
 }
 
 /*****************************************************************************/
@@ -173,9 +175,13 @@ void DepthCameraFrustum::TransformModel()
   for (it = _plane_normals.begin(); it != _plane_normals.end(); ++it) {
     it->TransformFrames(T);
   }
+
+  if (_visualize_frustum) {
+    VisualizeFrustum();
+  }
 }
 
-void DepthCameraFrustum::VisualizeFrustum(bool alt) {
+void DepthCameraFrustum::VisualizeFrustum() {
   Eigen::Affine3d T = Eigen::Affine3d::Identity();
   T.pretranslate(_orientation.inverse() * _position);
   T.prerotate(_orientation);

@@ -177,9 +177,6 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
     it->_clearing_frustum->SetPosition(it->_origin);
     it->_clearing_frustum->SetOrientation(it->_orientation);
     it->_clearing_frustum->TransformModel();
-    if (_visualize_frustum) {
-      it->_clearing_frustum->VisualizeFrustum();
-    }
     obs_frustums.emplace_back(it->_clearing_frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
   }
   TemporalClearAndGenerateCostmap(obs_frustums, cleared_cells);
@@ -323,9 +320,6 @@ void SpatioTemporalVoxelGrid::operator()(
   obs._marking_frustum->SetPosition(obs._origin);
   obs._marking_frustum->SetOrientation(obs._orientation);
   obs._marking_frustum->TransformModel();
-  if (_visualize_frustum) {
-    obs._marking_frustum->VisualizeFrustum(true);
-  }
 
   // Use this observation source only if it was configured as marking
   if (obs._marking) {
