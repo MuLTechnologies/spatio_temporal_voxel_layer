@@ -218,15 +218,19 @@ void SpatioTemporalVoxelGrid::TemporalClearAndGenerateCostmap(
 
         // Clear voxels within frustum only if decay is enabled
         if (!frustum_it->is_decay_disabled) {
-          const double frustum_acceleration = GetFrustumAcceleration(
-            time_since_marking, frustum_it->accel_factor);
+          double frustum_acceleration;
+          double time_until_decay;
+          if (frustum_it->accel_factor > 0.0) {
+            // decay acceleration enabled
+            frustum_acceleration = GetFrustumAcceleration(
+              time_since_marking, frustum_it->accel_factor);
+            time_until_decay = base_duration_to_decay - frustum_acceleration;
+          } else {
+            // decay acceleration disabled 
+            time_until_decay = base_duration_to_decay -
+              time_since_marking;
+          }
 
-          // TODO: Disable this param compleetly or make a additional param for this
-          // As of now we do not use the frustum_acceleration
-          // const double time_until_decay = base_duration_to_decay -
-          //   frustum_acceleration;
-          const double time_until_decay = base_duration_to_decay -
-            time_since_marking;
           if (time_until_decay < 0.) {
             // expired by acceleration
             cleared_point = true;
@@ -234,13 +238,13 @@ void SpatioTemporalVoxelGrid::TemporalClearAndGenerateCostmap(
               std::cout << "Failed to clear point." << std::endl;
             }
             break;
-          } else {
-            // Since the frustum_acceleration is disabled we do not update values of point since marking
-            // const double updated_mark = cit_grid.getValue() -
-            //   frustum_acceleration;
-            // if (!this->MarkGridPoint(pt_index, updated_mark)) {
-            //   std::cout << "Failed to update mark." << std::endl;
-            // }
+          } else if (frustum_it->accel_factor > 0.0) {
+            // Modify existing voxel only if decay acceleration enabled
+            const double updated_mark = cit_grid.getValue() -
+              frustum_acceleration;
+            if (!this->MarkGridPoint(pt_index, updated_mark)) {
+              std::cout << "Failed to update mark." << std::endl;
+            }
             break;
           }
         }
