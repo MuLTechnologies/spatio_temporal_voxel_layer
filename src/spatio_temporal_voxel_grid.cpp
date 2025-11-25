@@ -171,16 +171,16 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
   std::vector<observation::MeasurementReading>::const_iterator it =
     clearing_readings.begin();
   for (; it != clearing_readings.end(); ++it) {
-    if (it->_frustum == nullptr) {
-      throw std::runtime_error("clearing_readings->_frustum is nullptr!");
+    if (it->_clearing_frustum == nullptr) {
+      throw std::runtime_error("clearing_readings->_clearing_frustum is nullptr!");
     }
-    it->_frustum->SetPosition(it->_origin);
-    it->_frustum->SetOrientation(it->_orientation);
-    it->_frustum->TransformModel();
+    it->_clearing_frustum->SetPosition(it->_origin);
+    it->_clearing_frustum->SetOrientation(it->_orientation);
+    it->_clearing_frustum->TransformModel();
     if (_visualize_frustum) {
-      it->_frustum->VisualizeFrustum();
+      it->_clearing_frustum->VisualizeFrustum();
     }
-    obs_frustums.emplace_back(it->_frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
+    obs_frustums.emplace_back(it->_clearing_frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
   }
   TemporalClearAndGenerateCostmap(obs_frustums, cleared_cells);
 }
@@ -316,34 +316,11 @@ void SpatioTemporalVoxelGrid::operator()(
   const observation::MeasurementReading & obs) const
 /*****************************************************************************/
 {
-  if (_marking_frustum_padding == 0.0) {
-    obs._frustum->SetPosition(obs._origin);
-    obs._frustum->SetOrientation(obs._orientation);
-    obs._frustum->TransformModel();
-if (_visualize_frustum) {
-      obs._frustum->VisualizeFrustum();
-    }
-  } else {
-    // Apply quaternion rotation to move the origin
-    Eigen::Quaterniond quaternion(obs._orientation.w, obs._orientation.x, obs._orientation.y, obs._orientation.z);
-    
-    // HENDLE THE HARDCODING HERE !!!!!!!!!!!!!!!!!!!!! PARAM THIS HAVE TO BE XDDD
-    Eigen::Vector3d displacement_vector(0.0, 0.0, _marking_frustum_padding); // The displacement vector along the z-axis which is forward in camera frame
-    Eigen::Vector3d new_origin = quaternion * displacement_vector + Eigen::Vector3d(obs._origin.x, obs._origin.y, obs._origin.z);
-          
-    // Convert Eigen::Vector3d to geometry_msgs::msg::Point
-    geometry_msgs::msg::Point new_origin_msg;
-    new_origin_msg.x = new_origin[0];
-    new_origin_msg.y = new_origin[1];
-    new_origin_msg.z = new_origin[2];
-
-    // Update and check frustum
-    obs._frustum->SetPosition(new_origin_msg);
-    obs._frustum->SetOrientation(obs._orientation);
-    obs._frustum->TransformModel();
-    if (_visualize_frustum) {
-      obs._frustum->VisualizeFrustum(true);
-    }
+  obs._marking_frustum->SetPosition(obs._origin);
+  obs._marking_frustum->SetOrientation(obs._orientation);
+  obs._marking_frustum->TransformModel();
+  if (_visualize_frustum) {
+    obs._marking_frustum->VisualizeFrustum(true);
   }
 
   // Use this observation source only if it was configured as marking
@@ -382,7 +359,7 @@ if (_visualize_frustum) {
       // We dont mark only if the naw voxel is outside of the frustum and its not already marked
       // This is done to not mark unclearable points (IsInside)
       // And to not clear points outside where there is data (IsGridPointEmpty)
-      if (!obs._frustum->IsInside(voxel_pose_world) && this->IsGridPointEmpty(coord_grid)) {
+      if (!obs._marking_frustum->IsInside(voxel_pose_world) && this->IsGridPointEmpty(coord_grid)) {
         continue;
       }
       // Try marking the point in the grid

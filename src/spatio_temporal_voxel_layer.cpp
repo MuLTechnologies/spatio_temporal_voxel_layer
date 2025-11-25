@@ -221,7 +221,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
 
   _voxel_grid->setMarkingFrustumPadding(marking_frustum_padding);
   _voxel_grid->setVisualizeFrustum(visualize_frustum);
-
+  
   matchSize();
 
   RCLCPP_INFO(logger_, "%s created underlying voxel grid.", getName().c_str());
@@ -338,7 +338,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
           source, topic,
           observation_keep_time, expected_update_rate, min_obstacle_height,
           max_obstacle_height, obstacle_range, *tf_, _global_frame, sensor_frame,
-          transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV, base_length, base_width,
+          transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV, marking_frustum_padding, base_length, base_width,
           decay_acceleration, disable_decay_inside_frustum, marking, clearing, _voxel_size,
           filter, voxel_min_points, enabled, clear_after_reading, model_type,
           node->get_clock(), node->get_logger())));
@@ -906,8 +906,6 @@ void SpatioTemporalVoxelLayer::updateBounds(
   // mark observations
   _voxel_grid->Mark(marking_observations);
 
-
-
   // update the ROS Layered Costmap
   UpdateROSCostmap(min_x, min_y, max_x, max_y, cleared_cells);
 
@@ -1231,6 +1229,12 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
             }
           }
         } else if (name == name_ + "." + "marking_frustum_padding") {
+          for (auto & buffer : _observation_buffers) {
+            buffer->Lock();
+            buffer->SetFrustumPadding(parameter.as_double());
+            buffer->CreateFrustum();
+            buffer->Unlock();
+          }
           _voxel_grid->setMarkingFrustumPadding(parameter.as_double());
         }
       }

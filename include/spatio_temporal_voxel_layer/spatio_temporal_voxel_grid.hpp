@@ -200,6 +200,9 @@ protected:
   std::unique_ptr<std::vector<geometry_msgs::msg::Point32>> _grid_points;
   std::unordered_map<occupany_cell, uint> * _cost_map;
   boost::mutex _grid_lock;
+
+  rclcpp::Node::SharedPtr _node;
+
 };
 
 }  // namespace volume_grid

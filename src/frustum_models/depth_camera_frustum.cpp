@@ -44,14 +44,17 @@ namespace geometry
 /*****************************************************************************/
 DepthCameraFrustum::DepthCameraFrustum(
   const double & vFOV, const double & hFOV, const double & min_dist,
-  const double & max_dist)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist)
+  const double & max_dist, const double & frustum_padding)
+: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding)
 /*****************************************************************************/
 {
   _valid_frustum = false;
   _node = std::make_shared<rclcpp::Node>("frustum_publisher");
+  // TODO: Add variable frustum name based on the namespace in marker 
   _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
   _frustum_alt_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum_alt", 10);
+  // Substract 2 x _frustum_padding from the _max_d to 1 to account for the moved origin and second for the padding at the end
+  _max_d = _max_d - 2 * _frustum_padding;
   rclcpp::sleep_for(std::chrono::milliseconds(100));
   this->ComputePlaneNormals();
 }
@@ -68,29 +71,35 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
 {
   // give ability to construct with bogus values
   if (_vFOV == 0 && _hFOV == 0) {
-    _valid_frustum = false;
-    return;
+      _valid_frustum = false;
+      return;
   }
+
+  // Define frustum origin with the _frustum_padding
+  Eigen::Vector3d frustum_origin(0.0, 0.0, _frustum_padding);
+
+  // Eigen::Vector3d frustum_origin(0.0, 0.0, 1.0);
+
 
   // Create frustum vertices
   std::vector<Eigen::Vector3d> pt_;
   pt_.reserve(8);
 
   Eigen::Vector3d vertex_pt(tan(_hFOV/2), tan(_vFOV/2), 1);
-  pt_.push_back(vertex_pt*_min_d);
-  pt_.push_back(vertex_pt*_max_d);
+  pt_.push_back(vertex_pt * _min_d + frustum_origin);
+  pt_.push_back(vertex_pt * _max_d + frustum_origin);
 
   vertex_pt = Eigen::Vector3d(-tan(_hFOV/2), tan(_vFOV/2), 1);
-  pt_.push_back(vertex_pt*_min_d);
-  pt_.push_back(vertex_pt*_max_d);
+  pt_.push_back(vertex_pt * _min_d + frustum_origin);
+  pt_.push_back(vertex_pt * _max_d + frustum_origin);
 
   vertex_pt = Eigen::Vector3d(-tan(_hFOV/2), -tan(_vFOV/2), 1);
-  pt_.push_back(vertex_pt*_min_d);
-  pt_.push_back(vertex_pt*_max_d);
+  pt_.push_back(vertex_pt * _min_d + frustum_origin);
+  pt_.push_back(vertex_pt * _max_d + frustum_origin);
 
   vertex_pt = Eigen::Vector3d(tan(_hFOV/2), -tan(_vFOV/2), 1);
-  pt_.push_back(vertex_pt*_min_d);
-  pt_.push_back(vertex_pt*_max_d);
+  pt_.push_back(vertex_pt * _min_d + frustum_origin);
+  pt_.push_back(vertex_pt * _max_d + frustum_origin);
 
   // cross each plane and get normals
   const Eigen::Vector3d v_01(pt_[1][0] - pt_[0][0],
