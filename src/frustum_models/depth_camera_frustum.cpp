@@ -49,8 +49,8 @@ DepthCameraFrustum::DepthCameraFrustum(
 /*****************************************************************************/
 {
   _valid_frustum = false;
-  // Substract 2 x _frustum_padding from the _max_d to 1 to account for the moved origin and second for the padding at the end
-  _max_d = _max_d - 2 * _frustum_padding;
+  // Substract _frustum_padding from the _max_d to account for the moved origin
+  _max_d = _max_d - _frustum_padding;
   this->ComputePlaneNormals();
 
   if(_visualize_frustum) {
