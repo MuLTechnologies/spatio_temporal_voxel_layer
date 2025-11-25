@@ -354,7 +354,7 @@ void SpatioTemporalVoxelGrid::operator()(
       auto coord_grid = openvdb::Coord(mark_grid[0], mark_grid[1], mark_grid[2]);
       auto voxel_pose_world = this->IndexToWorld(coord_grid);
 
-      // We dont mark only if the naw voxel is outside of the frustum and its not already marked
+      // We dont mark only if the new voxel is outside of the frustum and its not already marked
       // This is done to not mark unclearable points (IsInside)
       // And to not clear points outside where there is data (IsGridPointEmpty)
       if (!obs._marking_frustum->IsInside(voxel_pose_world) && this->IsGridPointEmpty(coord_grid)) {

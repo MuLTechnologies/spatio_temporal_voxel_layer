@@ -149,7 +149,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   // Set the static mapping frustum padding TODO: Make it dynamic based on current speed
   declareParameter("marking_frustum_padding", rclcpp::ParameterValue(0.0));
   node->get_parameter(name_ + ".marking_frustum_padding", marking_frustum_padding);
-  // Set the static mapping frustum padding TODO: Make it dynamic based on current speed
+  // Enable the frustum visualization
   declareParameter("visualize_frustum", rclcpp::ParameterValue(false));
   node->get_parameter(name_ + ".visualize_frustum", visualize_frustum);
   

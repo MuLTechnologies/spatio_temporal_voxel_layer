@@ -77,10 +77,8 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
   }
 
   // Define frustum origin with the _frustum_padding
+  // This is the offset we move the clearing frustum  forward (in z-axis in camera coords)
   Eigen::Vector3d frustum_origin(0.0, 0.0, _frustum_padding);
-
-  // Eigen::Vector3d frustum_origin(0.0, 0.0, 1.0);
-
 
   // Create frustum vertices
   std::vector<Eigen::Vector3d> pt_;
