@@ -55,7 +55,7 @@ class DepthCameraFrustum : public Frustum
 public:
   DepthCameraFrustum(
     const double & vFOV, const double & hFOV,
-    const double & min_dist, const double & max_dist, const double & frustum_padding, 
+    const double & min_dist, const double & max_dist, const double & frustum_offset, 
     const std::string & frustum_name, const bool & visualize_frustum, const std::string & global_frame);
   virtual ~DepthCameraFrustum(void);
 
@@ -78,7 +78,7 @@ private:
   double Dot(const VectorWithPt3D &, const openvdb::Vec3d &) const;
   double Dot(const VectorWithPt3D &, const Eigen::Vector3d &) const;
 
-  double _vFOV, _hFOV, _min_d, _max_d, _frustum_padding;
+  double _vFOV, _hFOV, _min_d, _max_d, _frustum_offset;
   std::vector<VectorWithPt3D> _precomputed_plane_normals;
   std::vector<VectorWithPt3D> _plane_normals;
   Eigen::Vector3d _position;
