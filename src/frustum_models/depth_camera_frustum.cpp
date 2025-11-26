@@ -44,12 +44,16 @@ namespace geometry
 /*****************************************************************************/
 DepthCameraFrustum::DepthCameraFrustum(
   const double & vFOV, const double & hFOV, const double & min_dist,
-  const double & max_dist, const double & frustum_padding, const std::string & frustum_name, const bool & visualize_frustum)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding), _frustum_name(frustum_name), _visualize_frustum(visualize_frustum)
+  const double & max_dist, const double & frustum_padding, const std::string & frustum_name, 
+  const bool & visualize_frustum, const std::string & global_frame)
+: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding),
+ _frustum_name(frustum_name), _visualize_frustum(visualize_frustum), _global_frame(global_frame)
 /*****************************************************************************/
 {
   _valid_frustum = false;
   // Substract _frustum_padding from the _max_d to account for the moved origin
+  // Otherwise the padded frustum would be longer than the original one
+  // For this reason the frustum padding should not be longer than the max_d
   _max_d = _max_d - _frustum_padding;
   this->ComputePlaneNormals();
 
@@ -188,7 +192,7 @@ void DepthCameraFrustum::VisualizeFrustum() {
   visualization_msgs::msg::Marker msg;
 
   // frustum lines
-  msg.header.frame_id = std::string("odom");  // Use global_frame of costmap
+  msg.header.frame_id = _global_frame;  // Use global_frame of costmap
   msg.type = visualization_msgs::msg::Marker::LINE_LIST;
   msg.scale.x = 0.02;   // line width
   msg.pose.orientation.w = 1.0;

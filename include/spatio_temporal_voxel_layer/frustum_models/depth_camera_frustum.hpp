@@ -55,7 +55,8 @@ class DepthCameraFrustum : public Frustum
 public:
   DepthCameraFrustum(
     const double & vFOV, const double & hFOV,
-    const double & min_dist, const double & max_dist, const double & frustum_padding, const std::string & frustum_name, const bool & visualize_frustum);
+    const double & min_dist, const double & max_dist, const double & frustum_padding, 
+    const std::string & frustum_name, const bool & visualize_frustum, const std::string & global_frame);
   virtual ~DepthCameraFrustum(void);
 
   // transform plane normals by depth camera pose
@@ -88,7 +89,7 @@ private:
   // Visualization
   std::vector<Eigen::Vector3d> _frustum_pts;
   rclcpp::Node::SharedPtr _node;
-  std::string _frustum_name;
+  std::string _frustum_name, _global_frame;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _frustum_pub;
 };
 

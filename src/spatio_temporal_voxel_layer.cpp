@@ -218,7 +218,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
       node->get_clock(), _voxel_size, static_cast<double>(default_value_), _decay_model,
       _voxel_decay, _publish_voxels, false);
   }
-  
+
   matchSize();
 
   RCLCPP_INFO(logger_, "%s created underlying voxel grid.", getName().c_str());
