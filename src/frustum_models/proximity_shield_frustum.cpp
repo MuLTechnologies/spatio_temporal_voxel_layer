@@ -54,7 +54,7 @@ ProximityShieldFrustum::ProximityShieldFrustum(
 {
   _valid_frustum = false;
   _node = std::make_shared<rclcpp::Node>("frustum_publisher");
-  _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
+  _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("proximity_shield_frustum", 10);
   rclcpp::sleep_for(std::chrono::milliseconds(100));
   this->ComputePlaneNormals();
 }

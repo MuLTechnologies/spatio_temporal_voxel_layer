@@ -146,8 +146,8 @@ public:
   void SetMaxZ(const double & max_z);
   void SetVerticalFovPadding(const double & vertical_fov_padding);
   void SetHorizontalFovAngle(const double & horizontal_fov_angle);
-  void SetFrustumPadding(const double & frustum_padding);
-  void SetVisualizeFrustum(const double & visualize_frustum);
+  void SetMarkingFrustumPadding(const double & marking_frustum_padding);
+  void SetVisualizeFrustum(const bool & visualize_frustum);
   void SetVerticalFovAngle(const double & vertical_fov_angle);
   void SetBaseLength(const double & base_length);
   void SetBaseWidth(const double & base_width);

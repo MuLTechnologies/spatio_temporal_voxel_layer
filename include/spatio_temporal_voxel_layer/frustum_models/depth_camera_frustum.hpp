@@ -88,7 +88,7 @@ private:
   // Visualization
   std::vector<Eigen::Vector3d> _frustum_pts;
   rclcpp::Node::SharedPtr _node;
-  std::string _name;
+  std::string _frustum_name;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _frustum_pub;
 };
 

@@ -56,7 +56,7 @@ MeasurementBuffer::MeasurementBuffer(
   const double & obstacle_range, tf2_ros::Buffer & tf, const std::string & global_frame,
   const std::string & sensor_frame, const double & tf_tolerance,
   const double & min_d, const double & max_d, const double & vFOV,
-  const double & vFOVPadding, const double & hFOV, const double & frustum_padding,
+  const double & vFOVPadding, const double & hFOV, const double & marking_frustum_padding,
   const double & base_length, const double & base_width,
   const double & decay_acceleration, const bool & disable_decay_inside_frustum, const bool & marking,
   const bool & clearing, const double & voxel_size, const Filters & filter,
@@ -70,7 +70,7 @@ MeasurementBuffer::MeasurementBuffer(
   _global_frame(global_frame), _sensor_frame(sensor_frame), _source_name(source_name),
   _topic_name(topic_name), _min_obstacle_height(min_obstacle_height),
   _max_obstacle_height(max_obstacle_height), _obstacle_range(obstacle_range),
-  _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d), _marking_frustum_padding(frustum_padding),
+  _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d), _marking_frustum_padding(marking_frustum_padding),
   _vertical_fov(vFOV), _vertical_fov_padding(vFOVPadding), _horizontal_fov(hFOV),
   _base_length(base_length), _base_width(base_width),
   _decay_acceleration(decay_acceleration), _voxel_size(voxel_size),
@@ -95,10 +95,11 @@ void MeasurementBuffer::CreateFrustum(void)
 {
   // Create and precalculate the frustum object based on the sensor model used
   if (_model_type == DEPTH_CAMERA) {
+    // Clearing frustum padding set to 0.0
     _clearing_frustum = std::make_shared<geometry::DepthCameraFrustum>(
       _vertical_fov, _horizontal_fov,
       _min_z, _max_z, 0.0, _source_name + "_clear", _visualize_frustum); 
-    // Padding set to 0.0 for clearing
+    // Marking frustum padded using _marking_frustum_padding
     _marking_frustum = std::make_shared<geometry::DepthCameraFrustum>(
       _vertical_fov, _horizontal_fov,
       _min_z, _max_z, _marking_frustum_padding, _source_name + "_mark", _visualize_frustum);
@@ -371,13 +372,13 @@ void MeasurementBuffer::SetHorizontalFovAngle(const double & horizontal_fov_angl
   _horizontal_fov = horizontal_fov_angle;
 }
 
-void MeasurementBuffer::SetFrustumPadding(const double & frustum_padding)
+void MeasurementBuffer::SetMarkingFrustumPadding(const double & marking_frustum_padding)
 /*****************************************************************************/
 {
-  _marking_frustum_padding = frustum_padding;
+  _marking_frustum_padding = marking_frustum_padding;
 }
 
-void MeasurementBuffer::SetVisualizeFrustum(const double & visualize_frustum)
+void MeasurementBuffer::SetVisualizeFrustum(const bool & visualize_frustum)
 /*****************************************************************************/
 {
   _visualize_frustum = visualize_frustum;

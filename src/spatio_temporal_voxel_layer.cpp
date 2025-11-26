@@ -1228,7 +1228,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
         } else if (name == name_ + "." + "marking_frustum_padding") {
           for (auto & buffer : _observation_buffers) {
             buffer->Lock();
-            buffer->SetFrustumPadding(parameter.as_double());
+            buffer->SetMarkingFrustumPadding(parameter.as_double());
             buffer->CreateFrustum();
             buffer->Unlock();
           }

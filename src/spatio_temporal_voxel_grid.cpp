@@ -354,13 +354,15 @@ void SpatioTemporalVoxelGrid::operator()(
       auto coord_grid = openvdb::Coord(mark_grid[0], mark_grid[1], mark_grid[2]);
       auto voxel_pose_world = this->IndexToWorld(coord_grid);
 
-      // We dont mark only if the new voxel is outside of the frustum and its not already marked
-      // This is done to not mark unclearable points (IsInside)
-      // And to not clear points outside where there is data (IsGridPointEmpty)
+      // Dont't mark if the new voxel is outside of the frustum and its not already marked
+      // !IsInside: This is done to not mark voxels the edge of clearing frustum (so outside of the padded marking_frustum), 
+      //            which we would not be able to clear when the cart is in motion.
+      // IsGridPointEmpty: This is done to skip marking only on voxels that are not already marked.
+      //                   Otherwise static obstacle would get cleared.
       if (!obs._marking_frustum->IsInside(voxel_pose_world) && this->IsGridPointEmpty(coord_grid)) {
         continue;
       }
-      // Try marking the point in the grid
+      // Try marking the point in the grid to create a new occupied voxel
       if (!this->MarkGridPoint(coord_grid, cur_time)) {
         std::cout << "Failed to mark point." << std::endl;
       }

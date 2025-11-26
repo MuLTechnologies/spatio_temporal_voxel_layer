@@ -45,7 +45,7 @@ namespace geometry
 DepthCameraFrustum::DepthCameraFrustum(
   const double & vFOV, const double & hFOV, const double & min_dist,
   const double & max_dist, const double & frustum_padding, const std::string & frustum_name, const bool & visualize_frustum)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding), _name(frustum_name), _visualize_frustum(visualize_frustum)
+: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding), _frustum_name(frustum_name), _visualize_frustum(visualize_frustum)
 /*****************************************************************************/
 {
   _valid_frustum = false;
@@ -77,7 +77,7 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
   }
 
   // Define frustum origin with the _frustum_padding
-  // This is the offset we move the clearing frustum  forward (in z-axis in camera coords)
+  // The padding is applied by transposing the input frustum FOV forward (away from the camera in z axis),
   Eigen::Vector3d frustum_origin(0.0, 0.0, _frustum_padding);
 
   // Create frustum vertices
@@ -220,7 +220,7 @@ void DepthCameraFrustum::VisualizeFrustum() {
   }
 
   // Set namespace for all points
-  msg.ns = _name;
+  msg.ns = _frustum_name;
 
   // Add the single marker to our list of markers
   msg_list.markers.push_back(msg);
