@@ -44,17 +44,24 @@ namespace geometry
 /*****************************************************************************/
 DepthCameraFrustum::DepthCameraFrustum(
   const double & vFOV, const double & hFOV, const double & min_dist,
-  const double & max_dist)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist)
+  const double & max_dist, const double & frustum_padding, const std::string & frustum_name, 
+  const bool & visualize_frustum, const std::string & global_frame)
+: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding),
+ _frustum_name(frustum_name), _visualize_frustum(visualize_frustum), _global_frame(global_frame)
 /*****************************************************************************/
 {
   _valid_frustum = false;
-  #if VISUALIZE_FRUSTUM // TO-DO: use ROS2 parameter and unique name of the topic
-  _node = std::make_shared<rclcpp::Node>("frustum_publisher");
-  _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
-  rclcpp::sleep_for(std::chrono::milliseconds(100));
-  #endif
+  // Substract _frustum_padding from the _max_d to account for the moved origin
+  // Otherwise the padded frustum would be longer than the original one
+  // For this reason the frustum padding should not be longer than the max_d
+  _max_d = _max_d - _frustum_padding;
   this->ComputePlaneNormals();
+
+  if(_visualize_frustum) {
+    _node = std::make_shared<rclcpp::Node>("frustum_publisher");
+    _frustum_pub = _node->create_publisher<visualization_msgs::msg::MarkerArray>("frustum", 10);
+    rclcpp::sleep_for(std::chrono::milliseconds(100));
+  }
 }
 
 /*****************************************************************************/
@@ -69,29 +76,33 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
 {
   // give ability to construct with bogus values
   if (_vFOV == 0 && _hFOV == 0) {
-    _valid_frustum = false;
-    return;
+      _valid_frustum = false;
+      return;
   }
+
+  // Define frustum origin with the _frustum_padding
+  // The padding is applied by transposing the input frustum FOV forward (away from the camera in z axis),
+  Eigen::Vector3d frustum_origin(0.0, 0.0, _frustum_padding);
 
   // Create frustum vertices
   std::vector<Eigen::Vector3d> pt_;
   pt_.reserve(8);
 
   Eigen::Vector3d vertex_pt(tan(_hFOV/2), tan(_vFOV/2), 1);
-  pt_.push_back(vertex_pt*_min_d);
-  pt_.push_back(vertex_pt*_max_d);
+  pt_.push_back(vertex_pt * _min_d + frustum_origin);
+  pt_.push_back(vertex_pt * _max_d + frustum_origin);
 
   vertex_pt = Eigen::Vector3d(-tan(_hFOV/2), tan(_vFOV/2), 1);
-  pt_.push_back(vertex_pt*_min_d);
-  pt_.push_back(vertex_pt*_max_d);
+  pt_.push_back(vertex_pt * _min_d + frustum_origin);
+  pt_.push_back(vertex_pt * _max_d + frustum_origin);
 
   vertex_pt = Eigen::Vector3d(-tan(_hFOV/2), -tan(_vFOV/2), 1);
-  pt_.push_back(vertex_pt*_min_d);
-  pt_.push_back(vertex_pt*_max_d);
+  pt_.push_back(vertex_pt * _min_d + frustum_origin);
+  pt_.push_back(vertex_pt * _max_d + frustum_origin);
 
   vertex_pt = Eigen::Vector3d(tan(_hFOV/2), -tan(_vFOV/2), 1);
-  pt_.push_back(vertex_pt*_min_d);
-  pt_.push_back(vertex_pt*_max_d);
+  pt_.push_back(vertex_pt * _min_d + frustum_origin);
+  pt_.push_back(vertex_pt * _max_d + frustum_origin);
 
   // cross each plane and get normals
   const Eigen::Vector3d v_01(pt_[1][0] - pt_[0][0],
@@ -136,9 +147,7 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
     VectorWithPt3D(
       T_1[0], T_1[1], T_1[2], pt_[2]) * -1);
 
-  #if VISUALIZE_FRUSTUM
   _frustum_pts = pt_;
-  #endif
 
   assert(_plane_normals.size() == 6);
   _valid_frustum = true;
@@ -148,7 +157,7 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
 }
 
 /*****************************************************************************/
-void DepthCameraFrustum::TransformModel(void)
+void DepthCameraFrustum::TransformModel()
 /*****************************************************************************/
 {
   if (!_valid_frustum) {
@@ -169,73 +178,41 @@ void DepthCameraFrustum::TransformModel(void)
     it->TransformFrames(T);
   }
 
-  #if VISUALIZE_FRUSTUM
+  if (_visualize_frustum) {
+    VisualizeFrustum();
+  }
+}
+
+void DepthCameraFrustum::VisualizeFrustum() {
+  Eigen::Affine3d T = Eigen::Affine3d::Identity();
+  T.pretranslate(_orientation.inverse() * _position);
+  T.prerotate(_orientation);
+
   visualization_msgs::msg::MarkerArray msg_list;
   visualization_msgs::msg::Marker msg;
-  // Visualize frustum points - disabled as not useful and reducing visibility
-  // for (uint i = 0; i != _frustum_pts.size(); i++) {
-  //   // frustum pts
-  //   msg.header.frame_id = std::string("odom");   // Use global_frame of costmap
-  //   msg.type = visualization_msgs::msg::Marker::SPHERE;
-  //   msg.action = visualization_msgs::msg::Marker::ADD;
-  //   msg.scale.x = 0.1;
-  //   msg.scale.y = 0.1;
-  //   msg.scale.z = 0.1;
-  //   msg.pose.orientation.w = 1.0;
-  //   msg.header.stamp = _node->now();
-  //   msg.ns = "pt_" + std::to_string(i);
-  //   msg.color.g = 1.0f;
-  //   msg.color.a = 1.0;
-  //   Eigen::Vector3d T_pt = T * _frustum_pts.at(i);
-  //   geometry_msgs::msg::Pose pnt;
-  //   pnt.position.x = T_pt[0];
-  //   pnt.position.y = T_pt[1];
-  //   pnt.position.z = T_pt[2];
-  //   pnt.orientation.w = 1;
-  //   msg.pose = pnt;
-  //   msg_list.markers.push_back(msg);
-
-  //   // point numbers
-  //   msg.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-  //   msg.ns = std::to_string(i);
-  //   msg.pose.position.z += 0.15;
-  //   msg.text = std::to_string(i);
-  //   msg_list.markers.push_back(msg);
-  // }
 
   // frustum lines
-  msg.header.frame_id = std::string("odom");   // Use global_frame of costmap
-  msg.type = visualization_msgs::msg::Marker::LINE_STRIP;
+  msg.header.frame_id = _global_frame;  // Use global_frame of costmap
+  msg.type = visualization_msgs::msg::Marker::LINE_LIST;
   msg.scale.x = 0.02;   // line width
   msg.pose.orientation.w = 1.0;
   msg.pose.position.x = 0;
   msg.pose.position.y = 0;
   msg.pose.position.z = 0;
   msg.header.stamp = _node->now();
-  msg.color.g = 1.0f;
-  msg.color.a = 1.0;
 
-  // annoying but only evaluates once
-  static const std::vector<int> v1 = {0, 2};
-  static const std::vector<int> v2 = {2, 4};
-  static const std::vector<int> v3 = {4, 6};
-  static const std::vector<int> v4 = {6, 0};
-  static const std::vector<int> v5 = {1, 3};
-  static const std::vector<int> v6 = {3, 5};
-  static const std::vector<int> v7 = {5, 7};
-  static const std::vector<int> v8 = {7, 1};
-  static const std::vector<int> v9 = {0, 1};
-  static const std::vector<int> v10 = {2, 3};
-  static const std::vector<int> v11 = {4, 5};
-  static const std::vector<int> v12 = {6, 7};
+  if (_frustum_padding != 0.0) {
+    msg.color.b = 1.0f;
+  } else { 
+    msg.color.g = 1.0f;
+  }
+
+  msg.color.a = 1.0; 
+
   static const std::vector<std::vector<int>> v_t = \
-  {v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12};
+  {{0,2}, {2,4}, {4,6}, {6,0}, {1,3}, {3,5}, {5,7}, {7,1}, {0,1}, {2,3}, {4,5}, {6,7}};
 
   for (uint i = 0; i != v_t.size(); i++) {
-    // frustum lines
-    msg.ns = "line_" + std::to_string(i);
-    msg.points.clear();
-
     for (uint j = 0; j != v_t[i].size(); j++) {
       Eigen::Vector3d T_pt = T * _frustum_pts.at(v_t[i][j]);
       geometry_msgs::msg::Point point;
@@ -244,37 +221,15 @@ void DepthCameraFrustum::TransformModel(void)
       point.z = T_pt[2];
       msg.points.push_back(point);
     }
-    msg_list.markers.push_back(msg);
   }
-  // Visualize frustum normal vectors - disabled as not useful and reducing visibility
-  // for (uint i = 0; i != _plane_normals.size(); i++) {
-  //   // normal vectors
-  //   msg.pose.position.z -= 0.15;
-  //   msg.type = visualization_msgs::msg::Marker::ARROW;
-  //   msg.ns = "normal_" + std::to_string(i);
-  //   msg.scale.x = 0.03; // shaft diameter
-  //   msg.scale.y = 0.07; // head diameter
-  //   msg.scale.z = 0.1;  // head length
-  //   msg.color.g = 1.0f;
-  //   const VectorWithPt3D nml = _plane_normals.at(i);
-  //   msg.pose.position.x = nml.initial_point[0];
-  //   msg.pose.position.y = nml.initial_point[1];
-  //   msg.pose.position.z = nml.initial_point[2];
 
-  //   // turn unit vector into a quaternion
-  //   const Eigen::Quaterniond quat =
-  //     Eigen::Quaterniond::FromTwoVectors(
-  //     Eigen::Vector3d::UnitX(),
-  //     Eigen::Vector3d(nml.x, nml.y, nml.z) );
-  //   msg.pose.orientation.x = quat.x();
-  //   msg.pose.orientation.y = quat.y();
-  //   msg.pose.orientation.z = quat.z();
-  //   msg.pose.orientation.w = quat.w();
+  // Set namespace for all points
+  msg.ns = _frustum_name;
 
-  //   msg_list.markers.push_back(msg);
-  // }
+  // Add the single marker to our list of markers
+  msg_list.markers.push_back(msg);
+
   _frustum_pub->publish(msg_list);
-  #endif
 }
 
 /*****************************************************************************/

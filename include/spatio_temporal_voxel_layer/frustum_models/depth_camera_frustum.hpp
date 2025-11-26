@@ -40,8 +40,6 @@
 #ifndef SPATIO_TEMPORAL_VOXEL_LAYER__FRUSTUM_MODELS__DEPTH_CAMERA_FRUSTUM_HPP_
 #define SPATIO_TEMPORAL_VOXEL_LAYER__FRUSTUM_MODELS__DEPTH_CAMERA_FRUSTUM_HPP_
 
-#define VISUALIZE_FRUSTUM 0
-
 // STL
 #include <vector>
 #include <mutex>
@@ -57,11 +55,15 @@ class DepthCameraFrustum : public Frustum
 public:
   DepthCameraFrustum(
     const double & vFOV, const double & hFOV,
-    const double & min_dist, const double & max_dist);
+    const double & min_dist, const double & max_dist, const double & frustum_padding, 
+    const std::string & frustum_name, const bool & visualize_frustum, const std::string & global_frame);
   virtual ~DepthCameraFrustum(void);
 
   // transform plane normals by depth camera pose
-  virtual void TransformModel(void);
+  virtual void TransformModel();
+
+  // Visualize the frutum on a topic
+  virtual void VisualizeFrustum();
 
   // determine if a point is inside of the transformed frustum
   virtual bool IsInside(const openvdb::Vec3d & pt);
@@ -76,19 +78,19 @@ private:
   double Dot(const VectorWithPt3D &, const openvdb::Vec3d &) const;
   double Dot(const VectorWithPt3D &, const Eigen::Vector3d &) const;
 
-  double _vFOV, _hFOV, _min_d, _max_d;
+  double _vFOV, _hFOV, _min_d, _max_d, _frustum_padding;
   std::vector<VectorWithPt3D> _precomputed_plane_normals;
   std::vector<VectorWithPt3D> _plane_normals;
   Eigen::Vector3d _position;
   Eigen::Quaterniond _orientation;
-  bool _valid_frustum;
+  bool _valid_frustum, _visualize_frustum;
   std::mutex _transform_mutex;
-
-  #if VISUALIZE_FRUSTUM
+  
+  // Visualization
   std::vector<Eigen::Vector3d> _frustum_pts;
   rclcpp::Node::SharedPtr _node;
+  std::string _frustum_name, _global_frame;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr _frustum_pub;
-  #endif
 };
 
 }  // namespace geometry

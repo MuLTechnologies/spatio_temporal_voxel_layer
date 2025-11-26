@@ -74,7 +74,7 @@ struct MeasurementReading
     double obstacle_range, double min_z, double max_z, double vFOV,
     double vFOVPadding, double hFOV, double base_length, double base_width,
     double decay_acceleration, bool disable_decay_inside_frustum,
-    bool marking, bool clearing, ModelType model_type, geometry::Frustum * frustum)
+    bool marking, bool clearing, ModelType model_type, geometry::Frustum * clearing_frustum, geometry::Frustum * marking_frustum)
   /*****************************************************************************/
     : _origin(origin),
     _cloud(std::make_shared < sensor_msgs::msg::PointCloud2 > (cloud)),
@@ -91,7 +91,8 @@ struct MeasurementReading
     _disable_decay_inside_frustum(disable_decay_inside_frustum),
     _decay_acceleration(decay_acceleration),
     _model_type(model_type),
-    _frustum(frustum)
+    _clearing_frustum(clearing_frustum),
+    _marking_frustum(marking_frustum)
   {
   }
 
@@ -122,7 +123,8 @@ struct MeasurementReading
     _disable_decay_inside_frustum(obs._disable_decay_inside_frustum),
     _decay_acceleration(obs._decay_acceleration),
     _model_type(obs._model_type),
-    _frustum(obs._frustum)
+    _clearing_frustum(obs._clearing_frustum),
+    _marking_frustum(obs._marking_frustum)
   {
   }
 
@@ -133,7 +135,9 @@ struct MeasurementReading
   double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad, _base_length, _base_width;
   double _marking, _clearing, _disable_decay_inside_frustum, _decay_acceleration;
   ModelType _model_type;
-  std::shared_ptr<geometry::Frustum> _frustum;
+  std::shared_ptr<geometry::Frustum> _clearing_frustum;
+  std::shared_ptr<geometry::Frustum> _marking_frustum;
+
 };
 
 }  // namespace observation

@@ -56,12 +56,12 @@ MeasurementBuffer::MeasurementBuffer(
   const double & obstacle_range, tf2_ros::Buffer & tf, const std::string & global_frame,
   const std::string & sensor_frame, const double & tf_tolerance,
   const double & min_d, const double & max_d, const double & vFOV,
-  const double & vFOVPadding, const double & hFOV,
+  const double & vFOVPadding, const double & hFOV, const double & marking_frustum_padding,
   const double & base_length, const double & base_width,
   const double & decay_acceleration, const bool & disable_decay_inside_frustum, const bool & marking,
   const bool & clearing, const double & voxel_size, const Filters & filter,
   const int & voxel_min_points, const bool & enabled,
-  const bool & clear_buffer_after_reading, const ModelType & model_type,
+  const bool & clear_buffer_after_reading, const ModelType & model_type, const bool & visualize_frustum,
   rclcpp::Clock::SharedPtr clock, rclcpp::Logger logger)
 : _buffer(tf),
   _observation_keep_time(rclcpp::Duration::from_seconds(observation_keep_time)),
@@ -70,14 +70,14 @@ MeasurementBuffer::MeasurementBuffer(
   _global_frame(global_frame), _sensor_frame(sensor_frame), _source_name(source_name),
   _topic_name(topic_name), _min_obstacle_height(min_obstacle_height),
   _max_obstacle_height(max_obstacle_height), _obstacle_range(obstacle_range),
-  _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d),
+  _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d), _marking_frustum_padding(marking_frustum_padding),
   _vertical_fov(vFOV), _vertical_fov_padding(vFOVPadding), _horizontal_fov(hFOV),
   _base_length(base_length), _base_width(base_width),
   _decay_acceleration(decay_acceleration), _voxel_size(voxel_size),
   _disable_decay_inside_frustum(disable_decay_inside_frustum), _marking(marking), _clearing(clearing),
   _filter(filter), _voxel_min_points(voxel_min_points),
   _clear_buffer_after_reading(clear_buffer_after_reading),
-  _enabled(enabled), _model_type(model_type), clock_(clock), logger_(logger)
+  _enabled(enabled), _model_type(model_type), _visualize_frustum(visualize_frustum), clock_(clock), logger_(logger)
 /*****************************************************************************/
 {
   CreateFrustum();
@@ -95,18 +95,27 @@ void MeasurementBuffer::CreateFrustum(void)
 {
   // Create and precalculate the frustum object based on the sensor model used
   if (_model_type == DEPTH_CAMERA) {
-    _frustum = std::make_shared<geometry::DepthCameraFrustum>(
+    // Clearing frustum padding set to 0.0
+    _clearing_frustum = std::make_shared<geometry::DepthCameraFrustum>(
       _vertical_fov, _horizontal_fov,
-      _min_z, _max_z);
+      _min_z, _max_z, 0.0, _source_name + "_clear", 
+      _visualize_frustum, _global_frame); 
+    // Marking frustum padded using _marking_frustum_padding
+    _marking_frustum = std::make_shared<geometry::DepthCameraFrustum>(
+      _vertical_fov, _horizontal_fov,
+      _min_z, _max_z, _marking_frustum_padding, _source_name + "_mark", 
+      _visualize_frustum, _global_frame);
   } else if (_model_type == THREE_DIMENSIONAL_LIDAR) {
-    _frustum = std::make_shared<geometry::ThreeDimensionalLidarFrustum>(
+    _clearing_frustum = std::make_shared<geometry::ThreeDimensionalLidarFrustum>(
       _vertical_fov, _vertical_fov_padding,
       _horizontal_fov, _min_z, _max_z);
+    _marking_frustum = _clearing_frustum;
   } else if (_model_type == VIRTUAL_PROXIMITY_SHIELD) {
-    _frustum = std::make_shared<geometry::ProximityShieldFrustum>(
+    _clearing_frustum = std::make_shared<geometry::ProximityShieldFrustum>(
       _base_length, _base_width,
       _vertical_fov, _horizontal_fov,
       _min_z, _max_z);
+    _marking_frustum = _clearing_frustum;
   } else {
     // add else if statement for each implemented model
     throw std::runtime_error("Unsupported model type, can't create frustum!");
@@ -163,7 +172,8 @@ void MeasurementBuffer::BufferROSCloud(
     _observation_list.front()._clearing = _clearing;
     _observation_list.front()._marking = _marking;
     _observation_list.front()._model_type = _model_type;
-    _observation_list.front()._frustum = _frustum;
+    _observation_list.front()._clearing_frustum = _clearing_frustum;
+    _observation_list.front()._marking_frustum = _marking_frustum;
 
     if (_clearing && !_marking) {
       // no need to buffer points
@@ -362,6 +372,18 @@ void MeasurementBuffer::SetHorizontalFovAngle(const double & horizontal_fov_angl
 /*****************************************************************************/
 {
   _horizontal_fov = horizontal_fov_angle;
+}
+
+void MeasurementBuffer::SetMarkingFrustumPadding(const double & marking_frustum_padding)
+/*****************************************************************************/
+{
+  _marking_frustum_padding = marking_frustum_padding;
+}
+
+void MeasurementBuffer::SetVisualizeFrustum(const bool & visualize_frustum)
+/*****************************************************************************/
+{
+  _visualize_frustum = visualize_frustum;
 }
 
 /*****************************************************************************/

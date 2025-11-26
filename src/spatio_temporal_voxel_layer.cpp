@@ -82,7 +82,8 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     getName().c_str(), _global_frame.c_str());
 
   bool track_unknown_space;
-  double transform_tolerance, map_save_time;
+  double transform_tolerance, map_save_time, marking_frustum_padding;
+  bool visualize_frustum; 
   int decay_model_int;
   // source names
   auto node = node_.lock();
@@ -145,6 +146,14 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   // if mapping, how often to save a map for safety
   declareParameter("map_save_duration", rclcpp::ParameterValue(60.0));
   node->get_parameter(name_ + ".map_save_duration", map_save_time);
+  // Set the static mapping frustum padding TODO: Make it dynamic based on current speed
+  declareParameter("marking_frustum_padding", rclcpp::ParameterValue(0.0));
+  node->get_parameter(name_ + ".marking_frustum_padding", marking_frustum_padding);
+  // Enable the frustum visualization
+  declareParameter("visualize_frustum", rclcpp::ParameterValue(false));
+  node->get_parameter(name_ + ".visualize_frustum", visualize_frustum);
+  
+
   RCLCPP_INFO(
     logger_,
     "%s loaded parameters from parameter server.", getName().c_str());
@@ -326,9 +335,9 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
           source, topic,
           observation_keep_time, expected_update_rate, min_obstacle_height,
           max_obstacle_height, obstacle_range, *tf_, _global_frame, sensor_frame,
-          transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV, base_length, base_width,
+          transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV, marking_frustum_padding, base_length, base_width,
           decay_acceleration, disable_decay_inside_frustum, marking, clearing, _voxel_size,
-          filter, voxel_min_points, enabled, clear_after_reading, model_type,
+          filter, voxel_min_points, enabled, clear_after_reading, model_type, visualize_frustum,
           node->get_clock(), node->get_logger())));
 
     // Add buffer to marking observation buffers
@@ -894,8 +903,6 @@ void SpatioTemporalVoxelLayer::updateBounds(
   // mark observations
   _voxel_grid->Mark(marking_observations);
 
-
-
   // update the ROS Layered Costmap
   UpdateROSCostmap(min_x, min_y, max_x, max_y, cleared_cells);
 
@@ -1218,6 +1225,13 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
               buffer->Unlock();
             }
           }
+        } else if (name == name_ + "." + "marking_frustum_padding") {
+          for (auto & buffer : _observation_buffers) {
+            buffer->Lock();
+            buffer->SetMarkingFrustumPadding(parameter.as_double());
+            buffer->CreateFrustum();
+            buffer->Unlock();
+          }
         }
       }
     }
@@ -1231,6 +1245,14 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
               buffer->Unlock();
             }
           }
+      }
+      if (name == name_ + "." + "visualize_frustum") {
+        for (auto & buffer : _observation_buffers) {
+          buffer->Lock();
+          buffer->SetVisualizeFrustum(parameter.as_bool());
+          buffer->CreateFrustum();
+          buffer->Unlock();
+        }
       }
       if (name == name_ + "." + "enabled") {
         bool enable = parameter.as_bool();

@@ -171,13 +171,13 @@ void SpatioTemporalVoxelGrid::ClearFrustums(
   std::vector<observation::MeasurementReading>::const_iterator it =
     clearing_readings.begin();
   for (; it != clearing_readings.end(); ++it) {
-    if (it->_frustum == nullptr) {
-      throw std::runtime_error("clearing_readings->_frustum is nullptr!");
+    if (it->_clearing_frustum == nullptr) {
+      throw std::runtime_error("clearing_readings->_clearing_frustum is nullptr!");
     }
-    it->_frustum->SetPosition(it->_origin);
-    it->_frustum->SetOrientation(it->_orientation);
-    it->_frustum->TransformModel();
-    obs_frustums.emplace_back(it->_frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
+    it->_clearing_frustum->SetPosition(it->_origin);
+    it->_clearing_frustum->SetOrientation(it->_orientation);
+    it->_clearing_frustum->TransformModel();
+    obs_frustums.emplace_back(it->_clearing_frustum, it->_decay_acceleration, it->_disable_decay_inside_frustum);
   }
   TemporalClearAndGenerateCostmap(obs_frustums, cleared_cells);
 }
@@ -215,11 +215,19 @@ void SpatioTemporalVoxelGrid::TemporalClearAndGenerateCostmap(
 
         // Clear voxels within frustum only if decay is enabled
         if (!frustum_it->is_decay_disabled) {
-          const double frustum_acceleration = GetFrustumAcceleration(
-            time_since_marking, frustum_it->accel_factor);
+          double frustum_acceleration;
+          double time_until_decay;
+          if (frustum_it->accel_factor > 0.0) {
+            // decay acceleration enabled
+            frustum_acceleration = GetFrustumAcceleration(
+              time_since_marking, frustum_it->accel_factor);
+            time_until_decay = base_duration_to_decay - frustum_acceleration;
+          } else {
+            // decay acceleration disabled 
+            time_until_decay = base_duration_to_decay -
+              time_since_marking;
+          }
 
-          const double time_until_decay = base_duration_to_decay -
-            frustum_acceleration;
           if (time_until_decay < 0.) {
             // expired by acceleration
             cleared_point = true;
@@ -227,7 +235,8 @@ void SpatioTemporalVoxelGrid::TemporalClearAndGenerateCostmap(
               std::cout << "Failed to clear point." << std::endl;
             }
             break;
-          } else {
+          } else if (frustum_it->accel_factor > 0.0) {
+            // Modify existing voxel only if decay acceleration enabled
             const double updated_mark = cit_grid.getValue() -
               frustum_acceleration;
             if (!this->MarkGridPoint(pt_index, updated_mark)) {
@@ -308,6 +317,10 @@ void SpatioTemporalVoxelGrid::operator()(
   const observation::MeasurementReading & obs) const
 /*****************************************************************************/
 {
+  obs._marking_frustum->SetPosition(obs._origin);
+  obs._marking_frustum->SetOrientation(obs._orientation);
+  obs._marking_frustum->TransformModel();
+
   // Use this observation source only if it was configured as marking
   if (obs._marking) {
     float mark_range_2 = obs._obstacle_range_in_m * obs._obstacle_range_in_m;
@@ -341,17 +354,16 @@ void SpatioTemporalVoxelGrid::operator()(
       auto coord_grid = openvdb::Coord(mark_grid[0], mark_grid[1], mark_grid[2]);
       auto voxel_pose_world = this->IndexToWorld(coord_grid);
 
-      // Don't mark the data outside of the observation frustum
-      obs._frustum->SetPosition(obs._origin);
-      obs._frustum->SetOrientation(obs._orientation);
-      obs._frustum->TransformModel();
-      if (!obs._frustum->IsInside(voxel_pose_world)) {
+      // Dont't mark if the new voxel is outside of the frustum and its not already marked
+      // !IsInside: This is done to not mark voxels the edge of clearing frustum (so outside of the padded marking_frustum), 
+      //            which we would not be able to clear when the cart is in motion.
+      // IsGridPointEmpty: This is done to skip marking only on voxels that are not already marked.
+      //                   Otherwise static obstacle would get cleared.
+      if (!obs._marking_frustum->IsInside(voxel_pose_world) && this->IsGridPointEmpty(coord_grid)) {
         continue;
       }
-
-      // Create a new occupied voxel
-      if (!this->MarkGridPoint(coord_grid, cur_time))
-      {
+      // Try marking the point in the grid to create a new occupied voxel
+      if (!this->MarkGridPoint(coord_grid, cur_time)) {
         std::cout << "Failed to mark point." << std::endl;
       }
     }
@@ -499,6 +511,15 @@ bool SpatioTemporalVoxelGrid::pointInPolygon(const occupany_cell& point, const s
             inside = !inside;
     }
     return inside;
+}
+
+/*****************************************************************************/
+bool SpatioTemporalVoxelGrid::IsGridPointEmpty(
+  const openvdb::Coord & pt) const
+/*****************************************************************************/
+{
+  openvdb::DoubleGrid::Accessor accessor = _grid->getAccessor();
+  return !accessor.isValueOn(pt);
 }
 
 
