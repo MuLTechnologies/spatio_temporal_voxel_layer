@@ -82,7 +82,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
     getName().c_str(), _global_frame.c_str());
 
   bool track_unknown_space;
-  double transform_tolerance, map_save_time, marking_frustum_padding;
+  double transform_tolerance, map_save_time, marking_frustum_offset;
   bool visualize_frustum; 
   int decay_model_int;
   // source names
@@ -147,8 +147,8 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   declareParameter("map_save_duration", rclcpp::ParameterValue(60.0));
   node->get_parameter(name_ + ".map_save_duration", map_save_time);
   // Set the static mapping frustum padding TODO: Make it dynamic based on current speed
-  declareParameter("marking_frustum_padding", rclcpp::ParameterValue(0.0));
-  node->get_parameter(name_ + ".marking_frustum_padding", marking_frustum_padding);
+  declareParameter("marking_frustum_offset", rclcpp::ParameterValue(0.0));
+  node->get_parameter(name_ + ".marking_frustum_offset", marking_frustum_offset);
   // Enable the frustum visualization
   declareParameter("visualize_frustum", rclcpp::ParameterValue(false));
   node->get_parameter(name_ + ".visualize_frustum", visualize_frustum);
@@ -335,7 +335,7 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
           source, topic,
           observation_keep_time, expected_update_rate, min_obstacle_height,
           max_obstacle_height, obstacle_range, *tf_, _global_frame, sensor_frame,
-          transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV, marking_frustum_padding, base_length, base_width,
+          transform_tolerance, min_z, max_z, vFOV, vFOVPadding, hFOV, marking_frustum_offset, base_length, base_width,
           decay_acceleration, disable_decay_inside_frustum, marking, clearing, _voxel_size,
           filter, voxel_min_points, enabled, clear_after_reading, model_type, visualize_frustum,
           node->get_clock(), node->get_logger())));
@@ -1225,10 +1225,10 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
               buffer->Unlock();
             }
           }
-        } else if (name == name_ + "." + "marking_frustum_padding") {
+        } else if (name == name_ + "." + "marking_frustum_offset") {
           for (auto & buffer : _observation_buffers) {
             buffer->Lock();
-            buffer->SetMarkingFrustumPadding(parameter.as_double());
+            buffer->SetMarkingFrustumOffset(parameter.as_double());
             buffer->CreateFrustum();
             buffer->Unlock();
           }
