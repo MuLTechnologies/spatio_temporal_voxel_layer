@@ -44,17 +44,17 @@ namespace geometry
 /*****************************************************************************/
 DepthCameraFrustum::DepthCameraFrustum(
   const double & vFOV, const double & hFOV, const double & min_dist,
-  const double & max_dist, const double & frustum_padding, const std::string & frustum_name, 
+  const double & max_dist, const double & frustum_offset, const std::string & frustum_name, 
   const bool & visualize_frustum, const std::string & global_frame)
-: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_padding(frustum_padding),
+: _vFOV(vFOV), _hFOV(hFOV), _min_d(min_dist), _max_d(max_dist), _frustum_offset(frustum_offset),
  _frustum_name(frustum_name), _visualize_frustum(visualize_frustum), _global_frame(global_frame)
 /*****************************************************************************/
 {
   _valid_frustum = false;
-  // Substract _frustum_padding from the _max_d to account for the moved origin
+  // Substract _frustum_offset from the _max_d to account for the moved origin
   // Otherwise the padded frustum would be longer than the original one
-  // For this reason the frustum padding should not be longer than the max_d
-  _max_d = _max_d - _frustum_padding;
+  // For this reason the frustum offset should not be longer than the max_d
+  _max_d = _max_d - _frustum_offset;
   this->ComputePlaneNormals();
 
   if(_visualize_frustum) {
@@ -80,9 +80,9 @@ void DepthCameraFrustum::ComputePlaneNormals(void)
       return;
   }
 
-  // Define frustum origin with the _frustum_padding
-  // The padding is applied by transposing the input frustum FOV forward (away from the camera in z axis),
-  Eigen::Vector3d frustum_origin(0.0, 0.0, _frustum_padding);
+  // Define frustum origin with the _frustum_offset
+  // The offset is applied by transposing the input frustum FOV forward (away from the camera in z axis),
+  Eigen::Vector3d frustum_origin(0.0, 0.0, _frustum_offset);
 
   // Create frustum vertices
   std::vector<Eigen::Vector3d> pt_;
@@ -201,7 +201,7 @@ void DepthCameraFrustum::VisualizeFrustum() {
   msg.pose.position.z = 0;
   msg.header.stamp = _node->now();
 
-  if (_frustum_padding != 0.0) {
+  if (_frustum_offset != 0.0) {
     msg.color.b = 1.0f;
   } else { 
     msg.color.g = 1.0f;
