@@ -116,6 +116,9 @@ void MeasurementBuffer::CreateFrustum(void)
       _vertical_fov, _horizontal_fov,
       _min_z, _max_z);
     _marking_frustum = _clearing_frustum;
+  } else if (_model_type == VIRTUAL_MARK_ALWAYS) {
+    _clearing_frustum = std::make_shared<geometry::MarkAlwaysFrustum>();
+    _marking_frustum = _clearing_frustum;
   } else {
     // add else if statement for each implemented model
     throw std::runtime_error("Unsupported model type, can't create frustum!");

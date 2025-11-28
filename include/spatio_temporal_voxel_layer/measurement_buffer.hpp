@@ -50,6 +50,8 @@
 #include "spatio_temporal_voxel_layer/frustum_models/depth_camera_frustum.hpp"
 #include "spatio_temporal_voxel_layer/frustum_models/proximity_shield_frustum.hpp"
 #include "spatio_temporal_voxel_layer/frustum_models/three_dimensional_lidar_frustum.hpp"
+#include "spatio_temporal_voxel_layer/frustum_models/mark_always_frustum.hpp"
+
 // PCL
 #include "pcl/common/transforms.h"
 #include "pcl/filters/voxel_grid.h"

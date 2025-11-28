@@ -104,6 +104,7 @@ add_library(${library_name} SHARED
             src/frustum_models/depth_camera_frustum.cpp
             src/frustum_models/three_dimensional_lidar_frustum.cpp
             src/frustum_models/proximity_shield_frustum.cpp
+            src/frustum_models/mark_always_frustum.cpp
             src/vdb2pc.cpp
 )
 
