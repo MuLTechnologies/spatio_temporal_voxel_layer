@@ -6,6 +6,14 @@ This package sits on top of [OpenVDB](http://www.openvdb.org/), an open-source C
 
 Leveraging OpenVDB, we have the ability to efficiently maintain a 3 dimensional voxel-representative world space. We wrap this with ROS tools and interfaces to the [navigation stack](http://wiki.ros.org/navigation) to allow for use of this layer in standard ROS configurations. It is certainly possible to utilize this package without ROS/Navigation and I invite other competing methodologies to develop here and create interfaces. 
 
+
+## ISSUES TO FIX (Nicolas)
+
+- obstacle_range is very undeterminitic. Looks like it has issues. Should be solved by cropping the marking frustum to the correct length and removing the obstacle_range as its used now
+- Costmap update sometimes does not contain the latest voxels. It can be seen on global costmap because of the low rate.
+  We see a case where the voxels appear but the costmap is updated in the next cycle, same with clearing. Does not happen always.
+
+
 Sample videos are shown below of a robot using **7 depth cameras** with less than 50% of a core, and another robot using a **VLP-16**.
 
 7 Depth Cameras      |  VLP-16 LIDAR 
