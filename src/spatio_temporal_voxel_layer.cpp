@@ -890,7 +890,13 @@ void SpatioTemporalVoxelLayer::updateBounds(
     should_save = node->now() - _last_map_save_time > *_map_save_duration;
   }
   
-  _voxel_grid->ClearFrustums(clearing_observations, cleared_cells);
+
+  // mark observations moved to pre ClearFrustumsAndGenerateCostmap
+  // Previously it was done after and it caused a delay of one full costmap cycle to mark.
+  // This messed up the clearing times as well
+  _voxel_grid->Mark(marking_observations);
+
+  _voxel_grid->ClearFrustumsAndGenerateCostmap(clearing_observations, cleared_cells);
 
   if (_mapping_mode && _autosaving_enabled && should_save) {    
     _last_map_save_time = node->now();
@@ -900,8 +906,6 @@ void SpatioTemporalVoxelLayer::updateBounds(
     SaveStvlMapCallback(nullptr, nullptr, response);
   }
 
-  // mark observations
-  _voxel_grid->Mark(marking_observations);
 
   // update the ROS Layered Costmap
   UpdateROSCostmap(min_x, min_y, max_x, max_y, cleared_cells);
