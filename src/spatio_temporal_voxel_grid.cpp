@@ -334,16 +334,13 @@ void SpatioTemporalVoxelGrid::operator()(
     // Iterate over each point in the observation buffer
     for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
     {
-      // Fiter out data by obstacle_range only if its grater than 0
-      if (obs._obstacle_range_in_m != 0.0) {
-        // Filter the data outside of the configured obstacle range
-        float distance_2 =
-          (*iter_x - obs._origin.x) * (*iter_x - obs._origin.x) +
-          (*iter_y - obs._origin.y) * (*iter_y - obs._origin.y) +
-          (*iter_z - obs._origin.z) * (*iter_z - obs._origin.z);
-        if (distance_2 > mark_range_2 || distance_2 < 0.0001) {
-          continue;
-        }
+      // Filter the data outside of the configured obstacle range
+      float distance_2 =
+        (*iter_x - obs._origin.x) * (*iter_x - obs._origin.x) +
+        (*iter_y - obs._origin.y) * (*iter_y - obs._origin.y) +
+        (*iter_z - obs._origin.z) * (*iter_z - obs._origin.z);
+      if (distance_2 > mark_range_2 || distance_2 < 0.0001) {
+        continue;
       }
 
       // Offset the negative values by voxel_size for correct rounding later on
