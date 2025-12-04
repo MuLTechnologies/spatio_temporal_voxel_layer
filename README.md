@@ -7,7 +7,7 @@ This package sits on top of [OpenVDB](http://www.openvdb.org/), an open-source C
 Leveraging OpenVDB, we have the ability to efficiently maintain a 3 dimensional voxel-representative world space. We wrap this with ROS tools and interfaces to the [navigation stack](http://wiki.ros.org/navigation) to allow for use of this layer in standard ROS configurations. It is certainly possible to utilize this package without ROS/Navigation and I invite other competing methodologies to develop here and create interfaces. 
 
 
-## ISSUES TO FIX (Nicolas)
+## TODO: ISSUES TO FIX
 
 - obstacle_range is very undeterminitic. Looks like it has issues. Should be solved by cropping the marking frustum to the correct length and removing the obstacle_range as its used now
 - Costmap update sometimes does not contain the latest voxels. It can be seen on global costmap because of the low rate.

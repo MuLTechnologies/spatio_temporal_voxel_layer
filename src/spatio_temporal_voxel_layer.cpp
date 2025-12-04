@@ -889,9 +889,8 @@ void SpatioTemporalVoxelLayer::updateBounds(
   if (_map_save_duration) {
     should_save = node->now() - _last_map_save_time > *_map_save_duration;
   }
-  
 
-  // mark observations moved to pre ClearFrustumsAndGenerateCostmap
+  // Mark the observations before ClearFrustumsAndGenerateCostmap.
   // Previously it was done after and it caused a delay of one full costmap cycle to mark.
   // This messed up the clearing times as well
   _voxel_grid->Mark(marking_observations);
