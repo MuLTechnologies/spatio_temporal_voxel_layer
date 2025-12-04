@@ -142,7 +142,7 @@ void SpatioTemporalVoxelGrid::InitializeGridFromFile(const std::string & filenam
 }
 
 /*****************************************************************************/
-void SpatioTemporalVoxelGrid::ClearFrustums(
+void SpatioTemporalVoxelGrid::ClearFrustumsAndGenerateCostmap(
   const std::vector<observation::MeasurementReading> & clearing_readings,
   std::unordered_set<occupany_cell> & cleared_cells)
 /*****************************************************************************/
