@@ -593,7 +593,9 @@ bool SpatioTemporalVoxelLayer::GetMarkingObservations(
   for (unsigned int i = 0; i != _marking_buffers.size(); ++i) {
     _marking_buffers[i]->Lock();
     _marking_buffers[i]->GetReadings(marking_observations);
-    current = _marking_buffers[i]->UpdatedAtExpectedRate();
+    if (_marking_buffers[i]->IsEnabled()) {
+      current = _marking_buffers[i]->UpdatedAtExpectedRate();
+    }
     _marking_buffers[i]->Unlock();
   }
   marking_observations.insert(
@@ -612,7 +614,9 @@ bool SpatioTemporalVoxelLayer::GetClearingObservations(
   for (unsigned int i = 0; i != _clearing_buffers.size(); ++i) {
     _clearing_buffers[i]->Lock();
     _clearing_buffers[i]->GetReadings(clearing_observations);
-    current = _clearing_buffers[i]->UpdatedAtExpectedRate();
+    if (_clearing_buffers[i]->IsEnabled()) {
+      current = _clearing_buffers[i]->UpdatedAtExpectedRate();
+    }
     _clearing_buffers[i]->Unlock();
   }
   return current;
@@ -1284,6 +1288,7 @@ SpatioTemporalVoxelLayer::dynamicParametersCallback(std::vector<rclcpp::Paramete
           }
         }
         enabled_ = enable;
+        _enabled = enable;
       }
     }
 
