@@ -312,6 +312,26 @@ void SpatioTemporalVoxelGrid::Mark(
 }
 
 /*****************************************************************************/
+void SpatioTemporalVoxelGrid::SetMarkingExclusionZone(
+  const double & x, const double & y, const double & radius)
+/*****************************************************************************/
+{
+  boost::unique_lock<boost::mutex> lock(_grid_lock);
+  _exclusion_active = true;
+  _excl_x = x;
+  _excl_y = y;
+  _excl_radius_2 = radius * radius;
+}
+
+/*****************************************************************************/
+void SpatioTemporalVoxelGrid::ClearMarkingExclusionZone()
+/*****************************************************************************/
+{
+  boost::unique_lock<boost::mutex> lock(_grid_lock);
+  _exclusion_active = false;
+}
+
+/*****************************************************************************/
 // This function marks occupied STV-Grid points from a provided observation source
 void SpatioTemporalVoxelGrid::operator()(
   const observation::MeasurementReading & obs) const
@@ -362,6 +382,20 @@ void SpatioTemporalVoxelGrid::operator()(
       if (!obs._marking_frustum->IsInside(voxel_pose_world) && this->IsGridPointEmpty(coord_grid)) {
         continue;
       }
+
+      // Don't add new voxels inside the circular zone around the tracked
+      // follow-me person (XY distance only, ignoring height). Same as above,
+      // we only skip voxels that are not already marked (IsGridPointEmpty),
+      // so existing/static obstacles inside the zone keep getting refreshed
+      // instead of being cleared.
+      if (_exclusion_active && this->IsGridPointEmpty(coord_grid)) {
+        const double excl_dx = *iter_x - _excl_x;
+        const double excl_dy = *iter_y - _excl_y;
+        if (excl_dx * excl_dx + excl_dy * excl_dy <= _excl_radius_2) {
+          continue;
+        }
+      }
+
       // Try marking the point in the grid to create a new occupied voxel
       if (!this->MarkGridPoint(coord_grid, cur_time)) {
         std::cout << "Failed to mark point." << std::endl;

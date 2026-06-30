@@ -49,6 +49,7 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <unordered_set>
 // voxel grid
 #include "spatio_temporal_voxel_layer/spatio_temporal_voxel_grid.hpp"
@@ -66,6 +67,8 @@
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
 #include "geometry_msgs/msg/point.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "visualization_msgs/msg/marker.hpp"
 #include "spatio_temporal_voxel_layer/srv/save_grid.hpp"
 #include "nav2_msgs/srv/clear_grid_around_pose.hpp"
 #include "std_srvs/srv/set_bool.hpp"
@@ -185,6 +188,22 @@ private:
    */
   void isInManualModeCb(const std_msgs::msg::Bool::UniquePtr& msg);
 
+  /**
+   * @brief Receive the tracked follow-me pose and store it (transformed to the
+   *        global frame) so that new voxels are not marked around the person.
+   * @param msg tracked pose on follow_me/target_pose
+   */
+  void FollowMeTargetPoseCallback(geometry_msgs::msg::PoseStamped::ConstSharedPtr msg);
+
+  /**
+   * @brief Publish a marker visualizing the circular zone around the tracked
+   *        person in which new voxels are not marked.
+   * @param active whether the zone is currently being applied
+   * @param x global-frame x of the zone center
+   * @param y global-frame y of the zone center
+   */
+  void publishFollowMeClearZone(bool active, double x, double y);
+
   // Functions for adding static obstacle zones
   bool AddStaticObservations(const observation::MeasurementReading & obs);
   bool RemoveStaticObservations(void);
@@ -229,6 +248,23 @@ private:
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr is_in_manual_mode_sub_;
   /// @brief Is cart in manual mode
   bool is_in_manual_mode_ = true;
+
+  /// @brief Tracked follow-me pose subscription
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _follow_me_pose_sub;
+  /// @brief Visualization of the circular zone where new voxels are not marked
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr _follow_me_zone_pub;
+  /// @brief Last received tracked pose, transformed into the global frame
+  geometry_msgs::msg::PoseStamped _follow_me_pose;
+  /// @brief Stamp of the last accepted tracked pose
+  rclcpp::Time _follow_me_pose_stamp;
+  /// @brief Whether a tracked pose has ever been received
+  bool _follow_me_pose_valid = false;
+  /// @brief Radius (m) of the circular zone around the person to not mark
+  double _follow_me_clear_radius;
+  /// @brief How long (s) a tracked pose stays valid before the zone is dropped
+  double _follow_me_pose_timeout;
+  /// @brief Guards access to the tracked pose fields between cb and updateBounds
+  std::mutex _follow_me_pose_mutex;
   
   bool _publish_voxels, _mapping_mode, was_reset_, _autosaving_enabled, _should_load_navigation_data;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr _voxel_pub;
