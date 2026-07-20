@@ -155,6 +155,11 @@ public:
   // Save the file to file with size information
   bool SaveGrid(const std::string & file_name, double & map_size_bytes);
 
+  // Set/clear a circular (XY) zone in which new voxels will not be marked.
+  // Center is expressed in the grid's world (global) frame.
+  void SetMarkingExclusionZone(const double & x, const double & y, const double & radius);
+  void ClearMarkingExclusionZone();
+
 protected:
   // Initialize grid metadata and library
   void InitializeGrid(void);
@@ -192,6 +197,10 @@ protected:
   std::unique_ptr<std::vector<geometry_msgs::msg::Point32>> _grid_points;
   std::unordered_map<occupany_cell, uint> * _cost_map;
   boost::mutex _grid_lock;
+
+  // Circular (XY) marking-exclusion zone around the tracked follow-me person
+  bool _exclusion_active = false;
+  double _excl_x = 0.0, _excl_y = 0.0, _excl_radius_2 = 0.0;
 
   rclcpp::Node::SharedPtr _node;
 

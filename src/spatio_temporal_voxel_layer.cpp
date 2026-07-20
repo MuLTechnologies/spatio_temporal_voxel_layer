@@ -152,7 +152,15 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   // Enable the frustum visualization
   declareParameter("visualize_frustum", rclcpp::ParameterValue(false));
   node->get_parameter(name_ + ".visualize_frustum", visualize_frustum);
-  
+  // Radius (m) of the circular zone around the tracked follow-me person in
+  // which new voxels are not marked. Set to 0 (or negative) to disable the
+  // feature entirely (no subscription, no exclusion, no visualization).
+  declareParameter("follow_me_clear_radius", rclcpp::ParameterValue(0.5));
+  node->get_parameter(name_ + ".follow_me_clear_radius", _follow_me_clear_radius);
+  // How long (s) a tracked follow-me pose stays valid before the zone is dropped
+  declareParameter("follow_me_pose_timeout", rclcpp::ParameterValue(1.0));
+  node->get_parameter(name_ + ".follow_me_pose_timeout", _follow_me_pose_timeout);
+
 
   RCLCPP_INFO(
     logger_,
@@ -177,6 +185,13 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
 
   _voxel_pub = node->create_publisher<sensor_msgs::msg::PointCloud2>(
     getName() + "/voxel_grid", rclcpp::QoS(1), pub_opt);
+
+  // Only advertise the visualization topic when the feature is enabled. The
+  // publisher is left null otherwise; publishFollowMeClearZone() no-ops on null.
+  if (_follow_me_clear_radius > 0.0) {
+    _follow_me_zone_pub = node->create_publisher<visualization_msgs::msg::Marker>(
+      getName() + "/follow_me_clear_zone", rclcpp::QoS(1), pub_opt);
+  }
 
   auto save_grid_callback = std::bind(
     &SpatioTemporalVoxelLayer::SaveGridCallback, this, _1, _2, _3);
@@ -686,6 +701,14 @@ void SpatioTemporalVoxelLayer::activate(void)
       std::bind(&SpatioTemporalVoxelLayer::isInManualModeCb, this, _1));
   }
 
+  // Subscribe to the tracked follow-me pose so new voxels are not marked
+  // inside a circular zone around the person. Disabled when the radius is <= 0.
+  if (_follow_me_clear_radius > 0.0) {
+    _follow_me_pose_sub = node->create_subscription<geometry_msgs::msg::PoseStamped>(
+      "/robo_cart/follow_me/target_pose", rclcpp::SystemDefaultsQoS(),
+      std::bind(&SpatioTemporalVoxelLayer::FollowMeTargetPoseCallback, this, _1));
+  }
+
   // Add callback for dynamic parametrs
   dyn_params_handler = node->add_on_set_parameters_callback(
     std::bind(&SpatioTemporalVoxelLayer::dynamicParametersCallback, this, _1));
@@ -704,6 +727,7 @@ void SpatioTemporalVoxelLayer::deactivate(void)
       (*sub_it)->unsubscribe();
     }
   }
+  _follow_me_pose_sub.reset();
   dyn_params_handler.reset();
 }
 
@@ -892,6 +916,25 @@ void SpatioTemporalVoxelLayer::updateBounds(
   auto node = node_.lock();
   if (_map_save_duration) {
     should_save = node->now() - _last_map_save_time > *_map_save_duration;
+  }
+
+  // Apply the follow-me marking-exclusion zone around the tracked person so
+  // that new voxels are not marked on top of them. The zone is only active
+  // while a recent pose is available, and the whole feature is disabled when
+  // the configured radius is <= 0.
+  if (_follow_me_clear_radius > 0.0) {
+    std::lock_guard<std::mutex> pose_lock(_follow_me_pose_mutex);
+    bool zone_fresh = _follow_me_pose_valid &&
+      (node->now() - _follow_me_pose_stamp).seconds() < _follow_me_pose_timeout;
+    if (zone_fresh) {
+      const double zx = _follow_me_pose.pose.position.x;
+      const double zy = _follow_me_pose.pose.position.y;
+      _voxel_grid->SetMarkingExclusionZone(zx, zy, _follow_me_clear_radius);
+      publishFollowMeClearZone(true, zx, zy);
+    } else {
+      _voxel_grid->ClearMarkingExclusionZone();
+      publishFollowMeClearZone(false, 0.0, 0.0);
+    }
   }
 
   // Mark the observations before ClearFrustumsAndGenerateCostmap.
@@ -1367,6 +1410,65 @@ void SpatioTemporalVoxelLayer::isInManualModeCb(const std_msgs::msg::Bool::Uniqu
 /*****************************************************************************/
 {
   is_in_manual_mode_ = msg->data;
+}
+
+/*****************************************************************************/
+void SpatioTemporalVoxelLayer::FollowMeTargetPoseCallback(
+  geometry_msgs::msg::PoseStamped::ConstSharedPtr msg)
+/*****************************************************************************/
+{
+  geometry_msgs::msg::PoseStamped pose_global;
+  try {
+    // Transform the tracked pose into the costmap global frame so it matches
+    // the world-frame coordinates the voxel grid marks in.
+    tf_->transform(*msg, pose_global, _global_frame);
+  } catch (tf2::TransformException & ex) {
+    RCLCPP_WARN_THROTTLE(
+      logger_, *node_.lock()->get_clock(), 2000,
+      "Failed to transform follow_me/target_pose from %s to %s: %s",
+      msg->header.frame_id.c_str(), _global_frame.c_str(), ex.what());
+    return;
+  }
+
+  std::lock_guard<std::mutex> pose_lock(_follow_me_pose_mutex);
+  _follow_me_pose = pose_global;
+  _follow_me_pose_stamp = node_.lock()->now();
+  _follow_me_pose_valid = true;
+}
+
+/*****************************************************************************/
+void SpatioTemporalVoxelLayer::publishFollowMeClearZone(bool active, double x, double y)
+/*****************************************************************************/
+{
+  if (!_follow_me_zone_pub) {
+    return;
+  }
+
+  visualization_msgs::msg::Marker marker;
+  marker.header.frame_id = _global_frame;
+  marker.header.stamp = node_.lock()->now();
+  marker.ns = "follow_me_clear_zone";
+  marker.id = 0;
+  marker.type = visualization_msgs::msg::Marker::CYLINDER;
+
+  if (active) {
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.pose.position.x = x;
+    marker.pose.position.y = y;
+    marker.pose.position.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = 2.0 * _follow_me_clear_radius;
+    marker.scale.y = 2.0 * _follow_me_clear_radius;
+    marker.scale.z = 0.05;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+    marker.color.a = 0.4;
+  } else {
+    marker.action = visualization_msgs::msg::Marker::DELETE;
+  }
+
+  _follow_me_zone_pub->publish(marker);
 }
 
 /*****************************************************************************/
