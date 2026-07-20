@@ -186,8 +186,12 @@ void SpatioTemporalVoxelLayer::onInitialize(void)
   _voxel_pub = node->create_publisher<sensor_msgs::msg::PointCloud2>(
     getName() + "/voxel_grid", rclcpp::QoS(1), pub_opt);
 
-  _follow_me_zone_pub = node->create_publisher<visualization_msgs::msg::Marker>(
-    getName() + "/follow_me_clear_zone", rclcpp::QoS(1), pub_opt);
+  // Only advertise the visualization topic when the feature is enabled. The
+  // publisher is left null otherwise; publishFollowMeClearZone() no-ops on null.
+  if (_follow_me_clear_radius > 0.0) {
+    _follow_me_zone_pub = node->create_publisher<visualization_msgs::msg::Marker>(
+      getName() + "/follow_me_clear_zone", rclcpp::QoS(1), pub_opt);
+  }
 
   auto save_grid_callback = std::bind(
     &SpatioTemporalVoxelLayer::SaveGridCallback, this, _1, _2, _3);
